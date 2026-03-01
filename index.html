@@ -149,8 +149,8 @@
     </script>
 
     <script type="module">
-        // ¡NUEVO! Importamos 'query', 'where' y 'getDocs' para buscar duplicados
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        // Importamos query, where y getDocs para las búsquedas
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Tus llaves de REVOLT
@@ -167,8 +167,9 @@
         const db = getFirestore(app);
 
         window.guardarProducto = async function() {
-            const idProd = document.getElementById('idProducto').value;
-            const nombre = document.getElementById('nombre').value;
+            // Usamos .trim() para quitar espacios accidentales al inicio o final
+            const idProd = document.getElementById('idProducto').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
             const compra = document.getElementById('compra').value;
             const venta = document.getElementById('venta').value;
             const stock = document.getElementById('stock').value;
@@ -179,25 +180,29 @@
             }
 
             try {
-                // LÓGICA INTELIGENTE: Verificar si el código ya existe
-                const q = query(collection(db, "productos"), where("codigo", "==", idProd));
+                // LÓGICA INTELIGENTE MEJORADA: Buscar coincidencia exacta de Código Y Nombre
+                const q = query(
+                    collection(db, "productos"), 
+                    where("codigo", "==", idProd),
+                    where("nombre", "==", nombre) // ¡Aquí está la magia!
+                );
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
-                    // Si el producto ya existe, lo actualizamos
+                    // Si coincide el código y el nombre, sumamos el stock
                     const docExistente = querySnapshot.docs[0];
                     const stockAnterior = docExistente.data().stock;
                     const nuevoStock = stockAnterior + Number(stock);
 
                     await updateDoc(doc(db, "productos", docExistente.id), {
                         stock: nuevoStock,
-                        precio_compra: Number(compra), // Actualiza precios por si cambiaron
+                        precio_compra: Number(compra), 
                         precio_venta: Number(venta)
                     });
                     
-                    alert(`¡Actualizado! Se sumaron ${stock} unidades. El nuevo stock es de ${nuevoStock}.`);
+                    alert(`¡Actualizado! Se sumaron ${stock} unidades. El nuevo stock de "${nombre}" es de ${nuevoStock}.`);
                 } else {
-                    // Si no existe, lo creamos como nuevo
+                    // Si es un código nuevo, O el mismo código con nombre diferente, lo crea aparte
                     await addDoc(collection(db, "productos"), {
                         codigo: idProd,
                         nombre: nombre,
@@ -209,7 +214,7 @@
                     alert("¡Nuevo producto registrado exitosamente!");
                 }
                 
-                // Limpiamos el formulario después de guardar
+                // Limpiamos el formulario
                 document.getElementById('idProducto').value = '';
                 document.getElementById('nombre').value = '';
                 document.getElementById('compra').value = '';
@@ -247,8 +252,10 @@
                 tabla.innerHTML += fila;
             });
             
-            // Re-aplicar el filtro de búsqueda por si se actualizó la tabla mientras buscábamos
-            filtrarTabla();
+            // Si la función filtrarTabla() existe en el HTML superior, la llamamos
+            if (typeof filtrarTabla === "function") {
+                filtrarTabla();
+            }
         });
 
         window.actualizarStock = async function(idFirebase, stockActual, cambio) {
@@ -273,3 +280,4 @@
     </script>
 </body>
 </html>
+
