@@ -34,8 +34,11 @@
         td:nth-child(2) { text-align: left; } 
         td:nth-child(6) { min-width: 120px; } 
 
-        /* Estilo para el recuadro de la cámara */
         #lector-codigo { width: 100%; max-width: 400px; margin: 10px auto; display: none; border: 2px solid #000080; border-radius: 8px; overflow: hidden; }
+        
+        /* Estilos para el buscador */
+        .buscador-container { margin: 20px 0; }
+        #buscador { border: 2px solid #000080; border-radius: 20px; padding: 12px 20px; font-size: 16px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -64,12 +67,19 @@
             <input type="number" id="venta" placeholder="Ej: 30000">
         </div>
         <div class="form-group">
-            <label for="stock">Cantidad en Stock:</label>
+            <label for="stock">Cantidad en Stock a ingresar:</label>
             <input type="number" id="stock" placeholder="Ej: 10">
         </div>
-        <button class="btn-main" onclick="guardarProducto()">Guardar Producto</button>
+        <button class="btn-main" onclick="guardarProducto()">Guardar / Sumar Producto</button>
+
+        <hr>
 
         <h2>Inventario Actual</h2>
+        
+        <div class="buscador-container">
+            <input type="text" id="buscador" placeholder="🔍 Buscar por código o nombre..." onkeyup="filtrarTabla()">
+        </div>
+
         <div style="overflow-x: auto;">
             <table>
                 <thead>
@@ -93,46 +103,55 @@
 
         function iniciarEscaner() {
             document.getElementById('lector-codigo').style.display = 'block';
-            
-            // Si ya hay un escáner activo, lo detenemos primero
             if(html5QrCode) {
                 html5QrCode.stop().catch(err => console.log(err));
             }
-
             html5QrCode = new Html5Qrcode("lector-codigo");
-            
             html5QrCode.start(
-                { facingMode: "environment" }, // Usa la cámara trasera del celular
-                {
-                    fps: 10,    // Fotogramas por segundo
-                    qrbox: { width: 250, height: 150 } // Cuadro de enfoque para código de barras
-                },
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: { width: 250, height: 150 } },
                 (codigoDecodificado) => {
-                    // ÉXITO: Detiene la cámara y pone el código en el input
                     document.getElementById('idProducto').value = codigoDecodificado;
-                    
-                    // Reproducir un pitido (opcional, muy pro)
                     let beep = new Audio('https://www.soundjay.com/button/beep-07.wav');
                     beep.play();
-
                     html5QrCode.stop().then(() => {
                         document.getElementById('lector-codigo').style.display = 'none';
-                        // Pasa el cursor automáticamente al nombre del producto
                         document.getElementById('nombre').focus(); 
                     });
                 },
-                (mensajeError) => {
-                    // Ignoramos los errores mientras intenta enfocar
-                }
+                (mensajeError) => { }
             ).catch((err) => {
-                alert("Error al iniciar la cámara. Asegúrate de darle permisos al navegador.");
+                alert("Error al iniciar la cámara. Asegúrate de darle permisos.");
             });
+        }
+
+        // FUNCIÓN DEL BUSCADOR EN TIEMPO REAL
+        function filtrarTabla() {
+            const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
+            const filas = document.getElementById('tablaInventario').getElementsByTagName('tr');
+
+            for (let i = 0; i < filas.length; i++) {
+                const celdaCodigo = filas[i].getElementsByTagName('td')[0];
+                const celdaNombre = filas[i].getElementsByTagName('td')[1];
+                
+                if (celdaCodigo || celdaNombre) {
+                    const textoCodigo = celdaCodigo.textContent || celdaCodigo.innerText;
+                    const textoNombre = celdaNombre.textContent || celdaNombre.innerText;
+                    
+                    if (textoCodigo.toLowerCase().indexOf(textoBusqueda) > -1 || textoNombre.toLowerCase().indexOf(textoBusqueda) > -1) {
+                        filas[i].style.display = "";
+                    } else {
+                        filas[i].style.display = "none";
+                    }
+                }
+            }
         }
     </script>
 
     <script type="module">
+        // ¡NUEVO! Importamos 'query', 'where' y 'getDocs' para buscar duplicados
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Tus llaves de REVOLT
         const firebaseConfig = {
@@ -160,14 +179,37 @@
             }
 
             try {
-                await addDoc(collection(db, "productos"), {
-                    codigo: idProd,
-                    nombre: nombre,
-                    precio_compra: Number(compra),
-                    precio_venta: Number(venta),
-                    stock: Number(stock)
-                });
+                // LÓGICA INTELIGENTE: Verificar si el código ya existe
+                const q = query(collection(db, "productos"), where("codigo", "==", idProd));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    // Si el producto ya existe, lo actualizamos
+                    const docExistente = querySnapshot.docs[0];
+                    const stockAnterior = docExistente.data().stock;
+                    const nuevoStock = stockAnterior + Number(stock);
+
+                    await updateDoc(doc(db, "productos", docExistente.id), {
+                        stock: nuevoStock,
+                        precio_compra: Number(compra), // Actualiza precios por si cambiaron
+                        precio_venta: Number(venta)
+                    });
+                    
+                    alert(`¡Actualizado! Se sumaron ${stock} unidades. El nuevo stock es de ${nuevoStock}.`);
+                } else {
+                    // Si no existe, lo creamos como nuevo
+                    await addDoc(collection(db, "productos"), {
+                        codigo: idProd,
+                        nombre: nombre,
+                        precio_compra: Number(compra),
+                        precio_venta: Number(venta),
+                        stock: Number(stock)
+                    });
+                    
+                    alert("¡Nuevo producto registrado exitosamente!");
+                }
                 
+                // Limpiamos el formulario después de guardar
                 document.getElementById('idProducto').value = '';
                 document.getElementById('nombre').value = '';
                 document.getElementById('compra').value = '';
@@ -176,7 +218,7 @@
                 
             } catch (error) {
                 console.error("Error al guardar: ", error);
-                alert("Hubo un error al guardar.");
+                alert("Hubo un error al guardar o actualizar el producto.");
             }
         };
 
@@ -204,6 +246,9 @@
                 `;
                 tabla.innerHTML += fila;
             });
+            
+            // Re-aplicar el filtro de búsqueda por si se actualizó la tabla mientras buscábamos
+            filtrarTabla();
         });
 
         window.actualizarStock = async function(idFirebase, stockActual, cambio) {
