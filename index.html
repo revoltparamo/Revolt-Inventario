@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REVOLT | Inventario</title>
+    <style>
+        /* Diseño limpio y corporativo usando los colores de REVOLT */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        h1 { color: #000080; text-align: center; } /* Azul Navy */
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        input:focus { border-color: #000080; outline: none; }
+        .btn-main { background-color: #000080; color: white; border: none; padding: 12px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; margin-bottom: 20px;}
+        .btn-main:hover { background-color: #000050; }
+        
+        /* Botones de acción en la tabla */
+        .btn-accion { padding: 6px 12px; margin: 0 2px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-mas { background-color: #28a745; } /* Verde */
+        .btn-mas:hover { background-color: #218838; }
+        .btn-menos { background-color: #ffc107; color: #333; } /* Amarillo */
+        .btn-menos:hover { background-color: #e0a800; }
+        .btn-danger { background-color: #dc3545; } /* Rojo */
+        .btn-danger:hover { background-color: #c82333; }
+        
+        /* Estilos de la tabla */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: center; }
+        th { background-color: #000080; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        td:nth-child(2) { text-align: left; } /* Alinear nombre a la izquierda */
+        td:nth-child(6) { min-width: 120px; } /* Dar espacio a los 3 botones */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>REVOLT | Gestión de Inventario</h1>
+
+        <div class="form-group">
+            <label for="idProducto">ID / Código de Barras:</label>
+            <input type="text" id="idProducto" placeholder="Escanea el código o escríbelo manual">
+        </div>
+        <div class="form-group">
+            <label for="nombre">Nombre del Producto:</label>
+            <input type="text" id="nombre" placeholder="Ej: Cable HDMI Vention 2.1">
+        </div>
+        <div class="form-group">
+            <label for="compra">Valor de Compra ($):</label>
+            <input type="number" id="compra" placeholder="Ej: 15000">
+        </div>
+        <div class="form-group">
+            <label for="venta">Valor de Venta ($):</label>
+            <input type="number" id="venta" placeholder="Ej: 30000">
+        </div>
+        <div class="form-group">
+            <label for="stock">Cantidad en Stock:</label>
+            <input type="number" id="stock" placeholder="Ej: 10">
+        </div>
+        <button class="btn-main" onclick="guardarProducto()">Guardar Producto</button>
+
+        <h2>Inventario Actual</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Producto</th>
+                    <th>Compra</th>
+                    <th>Venta</th>
+                    <th>Stock</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody id="tablaInventario">
+                </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        // ¡NUEVO! Importamos 'updateDoc' para poder modificar el stock
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // === CONFIGURACIÓN DE FIREBASE REVOLT ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyBY3EAZAhJnlKEPfeY7SfTlW5PxkXI59d8",
+            authDomain: "revolt-inventario.firebaseapp.com",
+            projectId: "revolt-inventario",
+            storageBucket: "revolt-inventario.firebasestorage.app",
+            messagingSenderId: "738514103146",
+            appId: "1:738514103146:web:8c32dd5fac960d4e505313"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.guardarProducto = async function() {
+            const idProd = document.getElementById('idProducto').value;
+            const nombre = document.getElementById('nombre').value;
+            const compra = document.getElementById('compra').value;
+            const venta = document.getElementById('venta').value;
+            const stock = document.getElementById('stock').value;
+
+            if(!idProd || !nombre || !compra || !venta || !stock) {
+                alert("Por favor, llena todos los campos para ingresar el producto.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "productos"), {
+                    codigo: idProd,
+                    nombre: nombre,
+                    precio_compra: Number(compra),
+                    precio_venta: Number(venta),
+                    stock: Number(stock)
+                });
+                
+                document.getElementById('idProducto').value = '';
+                document.getElementById('nombre').value = '';
+                document.getElementById('compra').value = '';
+                document.getElementById('venta').value = '';
+                document.getElementById('stock').value = '';
+                
+                document.getElementById('idProducto').focus();
+
+            } catch (error) {
+                console.error("Error al guardar: ", error);
+                alert("Hubo un error al conectar con la base de datos.");
+            }
+        };
+
+        const referenciaProductos = collection(db, "productos");
+        
+        onSnapshot(referenciaProductos, (querySnapshot) => {
+            const tabla = document.getElementById('tablaInventario');
+            tabla.innerHTML = ''; 
+            
+            querySnapshot.forEach((documento) => {
+                const producto = documento.data();
+                // ¡NUEVO! Añadimos los botones + y - en la columna de acción
+                const fila = `
+                    <tr>
+                        <td>${producto.codigo}</td>
+                        <td>${producto.nombre}</td>
+                        <td>$${producto.precio_compra.toLocaleString('es-CO')}</td>
+                        <td>$${producto.precio_venta.toLocaleString('es-CO')}</td>
+                        <td style="font-size: 1.1em; font-weight: bold;">${producto.stock}</td>
+                        <td>
+                            <button class="btn-accion btn-menos" title="Vender/Descontar 1" onclick="actualizarStock('${documento.id}', ${producto.stock}, -1)">-</button>
+                            <button class="btn-accion btn-mas" title="Añadir 1" onclick="actualizarStock('${documento.id}', ${producto.stock}, 1)">+</button>
+                            <button class="btn-accion btn-danger" title="Eliminar producto" onclick="eliminarProducto('${documento.id}')">X</button>
+                        </td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+        });
+
+        // ¡NUEVO! Función para actualizar el stock (+ o -)
+        window.actualizarStock = async function(idFirebase, stockActual, cambio) {
+            const nuevoStock = stockActual + cambio;
+            
+            // Lógica para evitar inventario negativo
+            if (nuevoStock < 0) {
+                alert("El stock no puede ser menor a 0. ¡No puedes vender lo que no tienes!");
+                return;
+            }
+
+            try {
+                const productoRef = doc(db, "productos", idFirebase);
+                // Actualizamos solo el campo 'stock' en la base de datos
+                await updateDoc(productoRef, {
+                    stock: nuevoStock
+                });
+            } catch (error) {
+                console.error("Error al actualizar stock: ", error);
+                alert("Hubo un error al actualizar el stock.");
+            }
+        };
+
+        window.eliminarProducto = async function(idFirebase) {
+            if(confirm("¿Seguro que deseas eliminar este producto de la base de datos?")) {
+                await deleteDoc(doc(db, "productos", idFirebase));
+            }
+        }
+    </script>
+</body>
+</html>
