@@ -33,23 +33,32 @@
         .btn-camara { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .btn-camara:hover { background-color: #218838; }
 
-        .btn-main { background-color: #000080; color: white; border: none; padding: 12px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; }
+        .btn-main { background-color: #000080; color: white; border: none; padding: 12px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; margin-bottom: 15px;}
         .btn-main:hover { background-color: #000050; }
         
         .btn-cobrar { background-color: #28a745; font-size: 20px; padding: 15px; margin-top: 10px; }
         .btn-cobrar:hover { background-color: #218838; }
+        
+        .btn-accion { padding: 6px 12px; margin: 0 2px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-mas { background-color: #28a745; } 
+        .btn-menos { background-color: #ffc107; color: #333; } 
+        .btn-danger { background-color: #dc3545; } 
 
         /* TABLAS */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; border: 1px solid #ddd; text-align: center; }
         th { background-color: #000080; color: white; }
         tr:nth-child(even) { background-color: #f2f2f2; }
+        td:nth-child(2) { text-align: left; } 
         
         /* DISEÑO DE VENTAS (GRID) */
         .grid-ventas { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
         @media (max-width: 768px) { .grid-ventas { grid-template-columns: 1fr; } }
         
         .total-venta { font-size: 28px; font-weight: bold; color: #000080; text-align: right; margin-top: 15px; border-top: 2px dashed #ccc; padding-top: 10px; }
+
+        /* LECTOR DE CÓDIGO FLOTANTE (Para que no choque en las pestañas) */
+        #contenedor-lector { display: none; margin: 10px auto; width: 100%; max-width: 400px; border: 2px solid #000080; border-radius: 8px; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -60,13 +69,12 @@
     </div>
 
     <div class="tab-menu">
-        <button class="tab-links active" onclick="abrirPestana(event, 'PestanaVentas')">💰 CAJA / POS</button>
+        <button class="tab-links active" onclick="abrirPestana(event, 'PestanaVentas')">💰 CAJA</button>
         <button class="tab-links" onclick="abrirPestana(event, 'PestanaInventario')">📦 INVENTARIO</button>
     </div>
 
     <div id="PestanaVentas" class="tab-content active">
         <div class="grid-ventas">
-            
             <div>
                 <div class="caja-blanca">
                     <h3 style="margin-top:0; color: #000080;">Datos del Cliente</h3>
@@ -84,10 +92,10 @@
                         <label>Buscar / Escanear Producto:</label>
                         <div class="input-con-boton">
                             <input type="text" id="buscadorVentas" placeholder="Código o Nombre...">
-                            <button class="btn-camara">📷</button>
+                            <button class="btn-camara" onclick="iniciarEscaner('buscadorVentas')">📷</button>
                         </div>
                     </div>
-                    </div>
+                    <div id="visor-camara-ventas"></div> </div>
             </div>
 
             <div class="caja-blanca">
@@ -104,26 +112,15 @@
                             </tr>
                         </thead>
                         <tbody id="tablaCarrito">
-                            <tr>
-                                <td>1</td>
-                                <td>Cable HDMI Vention 2.1</td>
-                                <td>$30.000</td>
-                                <td>$30.000</td>
-                                <td><button style="background:red; color:white; border:none; border-radius:4px; padding:5px;">X</button></td>
-                            </tr>
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
                 
-                <div class="total-venta">
-                    TOTAL: $30.000
-                </div>
-
-                <button class="btn-main btn-cobrar">💵 REGISTRAR VENTA E IMPRIMIR RECIBO</button>
+                <div class="total-venta">TOTAL: $0</div>
+                <button class="btn-main btn-cobrar">💵 REGISTRAR VENTA</button>
             </div>
         </div>
     </div>
-
 
     <div id="PestanaInventario" class="tab-content">
         <div class="caja-blanca">
@@ -132,12 +129,11 @@
                 <label for="idProducto">ID / Código de Barras:</label>
                 <div class="input-con-boton">
                     <input type="text" id="idProducto" placeholder="Escanea el código o escríbelo manual">
-                    <button type="button" class="btn-camara" onclick="iniciarEscaner()">📷 Escanear</button>
+                    <button type="button" class="btn-camara" onclick="iniciarEscaner('idProducto')">📷 Escanear</button>
                 </div>
-                <div id="lector-codigo" style="width: 100%; max-width: 400px; margin: 10px auto; display: none; border: 2px solid #000080; border-radius: 8px; overflow: hidden;"></div>
             </div>
-
-            <div class="form-group">
+            
+            <div id="contenedor-lector"></div> <div class="form-group">
                 <label for="nombre">Nombre del Producto:</label>
                 <input type="text" id="nombre" placeholder="Ej: Case Space Samsung A17">
             </div>
@@ -157,7 +153,7 @@
         </div>
 
         <div class="caja-blanca">
-            <h2 style="margin-top:0; color: #000080;">Base de Datos</h2>
+            <h2 style="margin-top:0; color: #000080;">INVENTARIO</h2>
             <div class="form-group">
                 <input type="text" id="buscador" placeholder="🔍 Buscar por código o nombre..." onkeyup="filtrarTabla()" style="border: 2px solid #000080; border-radius: 20px;">
             </div>
@@ -175,7 +171,7 @@
                         </tr>
                     </thead>
                     <tbody id="tablaInventario">
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -183,26 +179,201 @@
 
     <script>
         function abrirPestana(evt, nombrePestana) {
-            // Ocultar todo el contenido
             var i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tab-content");
             for (i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
                 tabcontent[i].classList.remove("active");
             }
-
-            // Quitar clase "active" de los botones
             tablinks = document.getElementsByClassName("tab-links");
             for (i = 0; i < tablinks.length; i++) {
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
-
-            // Mostrar la pestaña actual y añadir "active" al botón
             document.getElementById(nombrePestana).style.display = "block";
             document.getElementById(nombrePestana).classList.add("active");
             evt.currentTarget.className += " active";
         }
+
+        let html5QrCode;
+        
+        // La cámara ahora sabe a qué input (caja) debe enviar el código
+        function iniciarEscaner(inputIdDestino) {
+            const contenedor = document.getElementById('contenedor-lector');
+            
+            // Movemos el contenedor de la cámara debajo del input que se está usando
+            const inputElement = document.getElementById(inputIdDestino);
+            inputElement.parentNode.parentNode.appendChild(contenedor);
+            
+            contenedor.style.display = 'block';
+            
+            if(html5QrCode) {
+                html5QrCode.stop().catch(err => console.log(err));
+            }
+            
+            html5QrCode = new Html5Qrcode("contenedor-lector");
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                (codigoDecodificado) => {
+                    document.getElementById(inputIdDestino).value = codigoDecodificado;
+                    let beep = new Audio('https://www.soundjay.com/button/beep-07.wav');
+                    beep.play();
+                    html5QrCode.stop().then(() => {
+                        contenedor.style.display = 'none';
+                        // Si estamos en inventario, pasa al nombre. Si estamos en caja, podría buscar automáticamente luego.
+                        if(inputIdDestino === 'idProducto') document.getElementById('nombre').focus();
+                    });
+                },
+                (mensajeError) => { }
+            ).catch((err) => {
+                alert("Error al iniciar la cámara. Asegúrate de darle permisos.");
+            });
+        }
+
+        function filtrarTabla() {
+            const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
+            const filas = document.getElementById('tablaInventario').getElementsByTagName('tr');
+
+            for (let i = 0; i < filas.length; i++) {
+                const celdaCodigo = filas[i].getElementsByTagName('td')[0];
+                const celdaNombre = filas[i].getElementsByTagName('td')[1];
+                
+                if (celdaCodigo || celdaNombre) {
+                    const textoCodigo = celdaCodigo.textContent || celdaCodigo.innerText;
+                    const textoNombre = celdaNombre.textContent || celdaNombre.innerText;
+                    
+                    if (textoCodigo.toLowerCase().indexOf(textoBusqueda) > -1 || textoNombre.toLowerCase().indexOf(textoBusqueda) > -1) {
+                        filas[i].style.display = "";
+                    } else {
+                        filas[i].style.display = "none";
+                    }
+                }
+            }
+        }
     </script>
 
-    </body>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBY3EAZAhJnlKEPfeY7SfTlW5PxkXI59d8",
+            authDomain: "revolt-inventario.firebaseapp.com",
+            projectId: "revolt-inventario",
+            storageBucket: "revolt-inventario.firebasestorage.app",
+            messagingSenderId: "738514103146",
+            appId: "1:738514103146:web:8c32dd5fac960d4e505313"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.guardarProducto = async function() {
+            const idProd = document.getElementById('idProducto').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const compra = document.getElementById('compra').value;
+            const venta = document.getElementById('venta').value;
+            const stock = document.getElementById('stock').value;
+
+            if(!idProd || !nombre || !compra || !venta || !stock) {
+                alert("Por favor, llena todos los campos.");
+                return;
+            }
+
+            try {
+                const q = query(
+                    collection(db, "productos"), 
+                    where("codigo", "==", idProd),
+                    where("nombre", "==", nombre) 
+                );
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const docExistente = querySnapshot.docs[0];
+                    const stockAnterior = docExistente.data().stock;
+                    const nuevoStock = stockAnterior + Number(stock);
+
+                    await updateDoc(doc(db, "productos", docExistente.id), {
+                        stock: nuevoStock,
+                        precio_compra: Number(compra), 
+                        precio_venta: Number(venta)
+                    });
+                    
+                    alert(`¡Actualizado! Se sumaron ${stock} unidades. El nuevo stock de "${nombre}" es de ${nuevoStock}.`);
+                } else {
+                    await addDoc(collection(db, "productos"), {
+                        codigo: idProd,
+                        nombre: nombre,
+                        precio_compra: Number(compra),
+                        precio_venta: Number(venta),
+                        stock: Number(stock)
+                    });
+                    
+                    alert("¡Nuevo producto registrado exitosamente!");
+                }
+                
+                document.getElementById('idProducto').value = '';
+                document.getElementById('nombre').value = '';
+                document.getElementById('compra').value = '';
+                document.getElementById('venta').value = '';
+                document.getElementById('stock').value = '';
+                
+            } catch (error) {
+                console.error("Error al guardar: ", error);
+                alert("Hubo un error al guardar o actualizar el producto.");
+            }
+        };
+
+        // CARGAR INVENTARIO EN LA TABLA
+        const referenciaProductos = collection(db, "productos");
+        
+        onSnapshot(referenciaProductos, (querySnapshot) => {
+            const tabla = document.getElementById('tablaInventario');
+            tabla.innerHTML = ''; 
+            
+            querySnapshot.forEach((documento) => {
+                const producto = documento.data();
+                const fila = `
+                    <tr>
+                        <td>${producto.codigo}</td>
+                        <td>${producto.nombre}</td>
+                        <td>$${producto.precio_compra.toLocaleString('es-CO')}</td>
+                        <td>$${producto.precio_venta.toLocaleString('es-CO')}</td>
+                        <td style="font-size: 1.1em; font-weight: bold;">${producto.stock}</td>
+                        <td>
+                            <button class="btn-accion btn-menos" onclick="actualizarStock('${documento.id}', ${producto.stock}, -1)">-</button>
+                            <button class="btn-accion btn-mas" onclick="actualizarStock('${documento.id}', ${producto.stock}, 1)">+</button>
+                            <button class="btn-accion btn-danger" onclick="eliminarProducto('${documento.id}')">X</button>
+                        </td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+            
+            if (typeof filtrarTabla === "function") {
+                filtrarTabla();
+            }
+        });
+
+        window.actualizarStock = async function(idFirebase, stockActual, cambio) {
+            const nuevoStock = stockActual + cambio;
+            if (nuevoStock < 0) {
+                alert("El stock no puede ser menor a 0.");
+                return;
+            }
+            try {
+                const productoRef = doc(db, "productos", idFirebase);
+                await updateDoc(productoRef, { stock: nuevoStock });
+            } catch (error) {
+                console.error("Error al actualizar: ", error);
+            }
+        };
+
+        window.eliminarProducto = async function(idFirebase) {
+            if(confirm("¿Seguro que deseas eliminar este producto?")) {
+                await deleteDoc(doc(db, "productos", idFirebase));
+            }
+        }
+    </script>
+</body>
 </html>
