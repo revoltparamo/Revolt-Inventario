@@ -54,9 +54,51 @@
         .total-venta { font-size: 28px; font-weight: bold; color: #000080; text-align: right; margin-top: 15px; border-top: 2px dashed #ccc; padding-top: 10px; }
 
         #contenedor-lector { display: none; margin: 10px auto; width: 100%; max-width: 400px; border: 2px solid #000080; border-radius: 8px; overflow: hidden; }
+
+        /* ========================================= */
+        /* NUEVO DISEÑO DE ALERTAS Y MODALES PREMIUM */
+        /* ========================================= */
+        
+        /* Contenedor de Notificaciones (Toasts) */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        
+        .toast { min-width: 280px; background-color: #fff; color: #333; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-weight: bold; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #000080; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+        .toast.show { transform: translateX(0); }
+        .toast.exito { border-left-color: #28a745; }
+        .toast.error { border-left-color: #dc3545; }
+        .toast.alerta { border-left-color: #ffc107; }
+        
+        .toast-close { cursor: pointer; color: #999; font-size: 18px; margin-left: 15px; transition: 0.2s; }
+        .toast-close:hover { color: #333; }
+
+        /* Modal Customizado (Preguntas) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(3px); }
+        .modal-box { background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: aparecerModal 0.3s ease-out; }
+        @keyframes aparecerModal { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .modal-box h3 { color: #000080; margin-top: 0; font-size: 22px; }
+        .modal-botones { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
+        .modal-btn { padding: 12px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .btn-si { background: #28a745; color: white; }
+        .btn-si:hover { background: #218838; }
+        .btn-no { background: #dc3545; color: white; }
+        .btn-no:hover { background: #c82333; }
     </style>
 </head>
 <body>
+
+    <div id="toast-container"></div>
+
+    <div class="modal-overlay" id="custom-modal">
+        <div class="modal-box">
+            <h3 id="modal-titulo">Confirmación</h3>
+            <p id="modal-texto">¿Estás seguro de realizar esta acción?</p>
+            <div class="modal-botones">
+                <button class="modal-btn btn-no" id="modal-btn-cancel">Cancelar</button>
+                <button class="modal-btn btn-si" id="modal-btn-ok">Sí, Confirmar</button>
+            </div>
+        </div>
+    </div>
 
     <div class="header">
         <h1>REVOLT</h1>
@@ -108,8 +150,7 @@
                                 <th>Quitar</th>
                             </tr>
                         </thead>
-                        <tbody id="tablaCarrito">
-                            </tbody>
+                        <tbody id="tablaCarrito"></tbody>
                     </table>
                 </div>
                 
@@ -169,41 +210,70 @@
                             <th>Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaInventario">
-                    </tbody>
+                    <tbody id="tablaInventario"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
+        // --- SISTEMA DE ALERTAS TOAST ---
+        function mostrarAlerta(mensaje, tipo = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${tipo}`;
+            toast.innerHTML = `<span>${mensaje}</span> <span class="toast-close" onclick="this.parentElement.remove()">✖</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10); // Animación de entrada
+            
+            // Auto eliminar después de 3.5 segundos
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400); // Esperar que termine la animación
+            }, 3500);
+        }
+
+        // --- SISTEMA DE MODAL (Reemplazo de confirm) ---
+        function confirmarAccion(titulo, mensaje) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-modal');
+                document.getElementById('modal-titulo').innerText = titulo;
+                document.getElementById('modal-texto').innerText = mensaje;
+                
+                modal.style.display = 'flex';
+
+                document.getElementById('modal-btn-ok').onclick = () => {
+                    modal.style.display = 'none';
+                    resolve(true);
+                };
+                document.getElementById('modal-btn-cancel').onclick = () => {
+                    modal.style.display = 'none';
+                    resolve(false);
+                };
+            });
+        }
+
+        // --- MANEJO DE PESTAÑAS Y CÁMARA ---
         function abrirPestana(evt, nombrePestana) {
             var i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-                tabcontent[i].classList.remove("active");
-            }
+            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; tabcontent[i].classList.remove("active"); }
             tablinks = document.getElementsByClassName("tab-links");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
             document.getElementById(nombrePestana).style.display = "block";
             document.getElementById(nombrePestana).classList.add("active");
             evt.currentTarget.className += " active";
         }
 
         let html5QrCode;
-        
         function iniciarEscaner(inputIdDestino) {
             const contenedor = document.getElementById('contenedor-lector');
             const inputElement = document.getElementById(inputIdDestino);
             inputElement.parentNode.parentNode.appendChild(contenedor);
             contenedor.style.display = 'block';
             
-            if(html5QrCode) {
-                html5QrCode.stop().catch(err => console.log(err));
-            }
+            if(html5QrCode) { html5QrCode.stop().catch(err => console.log(err)); }
             
             html5QrCode = new Html5Qrcode("contenedor-lector");
             html5QrCode.start(
@@ -211,34 +281,21 @@
                 { fps: 10, qrbox: { width: 250, height: 150 } },
                 (codigoDecodificado) => {
                     document.getElementById(inputIdDestino).value = codigoDecodificado;
-                    let beep = new Audio('https://www.soundjay.com/button/beep-07.wav');
-                    beep.play();
+                    let beep = new Audio('https://www.soundjay.com/button/beep-07.wav'); beep.play();
                     html5QrCode.stop().then(() => {
                         contenedor.style.display = 'none';
-                        // Si estamos en caja, procesar automáticamente el código escaneado
-                        if(inputIdDestino === 'buscadorVentas') {
-                            procesarCodigoVenta();
-                        } else {
-                            document.getElementById('nombre').focus();
-                        }
+                        if(inputIdDestino === 'buscadorVentas') { procesarCodigoVenta(); } 
+                        else { document.getElementById('nombre').focus(); }
                     });
-                },
-                (mensajeError) => { }
-            ).catch((err) => {
-                alert("Error al iniciar la cámara. Asegúrate de darle permisos.");
-            });
+                }, (mensajeError) => { }
+            ).catch((err) => { mostrarAlerta("Error al iniciar la cámara. Revisa los permisos.", "error"); });
         }
 
-        function manejarEnter(event) {
-            if (event.key === "Enter") {
-                procesarCodigoVenta();
-            }
-        }
+        function manejarEnter(event) { if (event.key === "Enter") { procesarCodigoVenta(); } }
 
         function filtrarTabla() {
             const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
             const filas = document.getElementById('tablaInventario').getElementsByTagName('tr');
-
             for (let i = 0; i < filas.length; i++) {
                 const celdaCodigo = filas[i].getElementsByTagName('td')[0];
                 const celdaNombre = filas[i].getElementsByTagName('td')[1];
@@ -247,9 +304,7 @@
                     const textoNombre = celdaNombre.textContent || celdaNombre.innerText;
                     if (textoCodigo.toLowerCase().indexOf(textoBusqueda) > -1 || textoNombre.toLowerCase().indexOf(textoBusqueda) > -1) {
                         filas[i].style.display = "";
-                    } else {
-                        filas[i].style.display = "none";
-                    }
+                    } else { filas[i].style.display = "none"; }
                 }
             }
         }
@@ -271,21 +326,19 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Variables Globales para la Caja
         let inventarioActual = []; 
         let carrito = []; 
         let totalCaja = 0;
 
-        // 1. CARGAR INVENTARIO EN VIVO (Llena la tabla y nuestra variable global)
         const referenciaProductos = collection(db, "productos");
         onSnapshot(referenciaProductos, (querySnapshot) => {
             const tabla = document.getElementById('tablaInventario');
             tabla.innerHTML = ''; 
-            inventarioActual = []; // Limpiamos la memoria
+            inventarioActual = []; 
             
             querySnapshot.forEach((documento) => {
                 let producto = documento.data();
-                producto.idFirebase = documento.id; // Clave para luego descontar
+                producto.idFirebase = documento.id; 
                 inventarioActual.push(producto);
 
                 const fila = `
@@ -307,7 +360,6 @@
             if (typeof filtrarTabla === "function") filtrarTabla();
         });
 
-        // 2. FUNCIONES DE INVENTARIO
         window.guardarProducto = async function() {
             const idProd = document.getElementById('idProducto').value.trim();
             const nombre = document.getElementById('nombre').value.trim();
@@ -315,7 +367,7 @@
             const venta = document.getElementById('venta').value;
             const stock = document.getElementById('stock').value;
 
-            if(!idProd || !nombre || !compra || !venta || !stock) return alert("Por favor, llena todos los campos.");
+            if(!idProd || !nombre || !compra || !venta || !stock) return mostrarAlerta("Por favor, llena todos los campos.", "alerta");
 
             try {
                 const q = query(collection(db, "productos"), where("codigo", "==", idProd), where("nombre", "==", nombre));
@@ -325,52 +377,50 @@
                     const docExistente = querySnapshot.docs[0];
                     const nuevoStock = docExistente.data().stock + Number(stock);
                     await updateDoc(doc(db, "productos", docExistente.id), { stock: nuevoStock, precio_compra: Number(compra), precio_venta: Number(venta) });
-                    alert(`¡Actualizado! Nuevo stock de "${nombre}" es ${nuevoStock}.`);
+                    mostrarAlerta(`Se sumaron ${stock} unidades. Nuevo stock de "${nombre}" es ${nuevoStock}.`, "exito");
                 } else {
                     await addDoc(collection(db, "productos"), { codigo: idProd, nombre: nombre, precio_compra: Number(compra), precio_venta: Number(venta), stock: Number(stock) });
-                    alert("¡Nuevo producto registrado!");
+                    mostrarAlerta("Producto añadido correctamente.", "exito");
                 }
                 document.getElementById('idProducto').value = ''; document.getElementById('nombre').value = ''; document.getElementById('compra').value = ''; document.getElementById('venta').value = ''; document.getElementById('stock').value = '';
-            } catch (error) { alert("Error al guardar."); }
+            } catch (error) { mostrarAlerta("Error al conectar con la base de datos.", "error"); }
         };
 
         window.actualizarStock = async function(idFirebase, stockActual, cambio) {
             const nuevoStock = stockActual + cambio;
-            if (nuevoStock < 0) return alert("El stock no puede ser menor a 0.");
+            if (nuevoStock < 0) return mostrarAlerta("El stock no puede ser menor a 0.", "alerta");
             await updateDoc(doc(db, "productos", idFirebase), { stock: nuevoStock });
         };
 
         window.eliminarProducto = async function(idFirebase) {
-            if(confirm("¿Seguro que deseas eliminar este producto?")) await deleteDoc(doc(db, "productos", idFirebase));
+            const confirmado = await confirmarAccion("Eliminar Producto", "¿Estás seguro que deseas borrar este producto del inventario?");
+            if(confirmado) {
+                await deleteDoc(doc(db, "productos", idFirebase));
+                mostrarAlerta("Producto eliminado.", "exito");
+            }
         };
 
-        // 3. LÓGICA DE CAJA / POS
         window.procesarCodigoVenta = function() {
             const textoBuscado = document.getElementById('buscadorVentas').value.trim().toLowerCase();
             if (!textoBuscado) return;
 
-            // Busca por código exacto o por nombre parecido
             const productoEncontrado = inventarioActual.find(p => p.codigo.toLowerCase() === textoBuscado || p.nombre.toLowerCase().includes(textoBuscado));
 
             if (productoEncontrado) {
-                // Verificar si hay stock disponible
                 let cantidadEnCarrito = 0;
                 let itemPrevio = carrito.find(item => item.idFirebase === productoEncontrado.idFirebase);
                 if (itemPrevio) cantidadEnCarrito = itemPrevio.cantidad;
 
                 if (productoEncontrado.stock > cantidadEnCarrito) {
-                    if (itemPrevio) {
-                        itemPrevio.cantidad += 1; // Suma 1 si ya estaba en el carrito
-                    } else {
-                        carrito.push({ ...productoEncontrado, cantidad: 1 }); // Agrega nuevo
-                    }
-                    document.getElementById('buscadorVentas').value = ''; // Limpia el input
+                    if (itemPrevio) { itemPrevio.cantidad += 1; } 
+                    else { carrito.push({ ...productoEncontrado, cantidad: 1 }); }
+                    document.getElementById('buscadorVentas').value = ''; 
                     renderizarCarrito();
                 } else {
-                    alert("¡Atención! No hay suficiente stock en inventario de este producto.");
+                    mostrarAlerta("No hay suficiente stock en inventario.", "error");
                 }
             } else {
-                alert("Producto no encontrado en la base de datos.");
+                mostrarAlerta("Producto no encontrado en la base de datos.", "alerta");
             }
         };
 
@@ -394,7 +444,6 @@
                 `;
                 tabla.innerHTML += fila;
             });
-
             document.getElementById('textoTotalVenta').innerText = `TOTAL: $${totalCaja.toLocaleString('es-CO')}`;
         };
 
@@ -404,21 +453,20 @@
         };
 
         window.registrarVenta = async function() {
-            if (carrito.length === 0) return alert("El carrito está vacío.");
+            if (carrito.length === 0) return mostrarAlerta("El carrito está vacío.", "alerta");
 
             const cliente = document.getElementById('clienteNombre').value || "Cliente Mostrador";
             const documentoCli = document.getElementById('clienteDoc').value || "N/A";
 
-            if (!confirm(`¿Confirmas la venta por $${totalCaja.toLocaleString('es-CO')}?`)) return;
+            const confirmado = await confirmarAccion("Cobrar Venta", `¿Confirmas la venta por $${totalCaja.toLocaleString('es-CO')}?`);
+            if (!confirmado) return;
 
             try {
-                // 1. Restar el stock de cada producto en Firebase
                 for (let item of carrito) {
                     const nuevoStock = item.stock - item.cantidad;
                     await updateDoc(doc(db, "productos", item.idFirebase), { stock: nuevoStock });
                 }
 
-                // 2. Guardar el registro de la venta (Para la contabilidad)
                 await addDoc(collection(db, "ventas"), {
                     fecha: new Date().toISOString(),
                     cliente_nombre: cliente,
@@ -427,17 +475,15 @@
                     articulos: carrito.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, subtotal: i.precio_venta * i.cantidad }))
                 });
 
-                alert("¡Venta registrada exitosamente!");
+                mostrarAlerta("¡Venta registrada exitosamente!", "exito");
                 
-                // 3. Limpiar todo
                 carrito = [];
                 renderizarCarrito();
                 document.getElementById('clienteNombre').value = '';
                 document.getElementById('clienteDoc').value = '';
 
             } catch (error) {
-                console.error("Error al registrar venta: ", error);
-                alert("Hubo un error al procesar la venta.");
+                mostrarAlerta("Hubo un error al procesar la venta.", "error");
             }
         };
     </script>
