@@ -8,7 +8,6 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 0; padding: 0; }
         
-        /* CABECERA Y PESTAÑAS */
         .header { background-color: #000080; padding: 15px 20px; color: white; text-align: center; }
         .header h1 { margin: 0; font-size: 24px; letter-spacing: 2px; }
         
@@ -17,21 +16,20 @@
         .tab-menu button:hover { background-color: #333; color: white; }
         .tab-menu button.active { background-color: #f4f4f9; color: #000080; border-top: 4px solid #000080; }
 
-        /* CONTENEDOR PRINCIPAL */
         .tab-content { display: none; padding: 20px; max-width: 1000px; margin: auto; }
         .tab-content.active { display: block; }
         
         .caja-blanca { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
 
-        /* FORMULARIOS Y BOTONES */
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
         input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         input:focus { border-color: #000080; outline: none; }
         
-        .input-con-boton { display: flex; gap: 10px; }
+        .input-con-boton { display: flex; gap: 5px; }
         .btn-camara { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .btn-camara:hover { background-color: #218838; }
+        .btn-anadir { background-color: #000080; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
         .btn-main { background-color: #000080; color: white; border: none; padding: 12px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; margin-bottom: 15px;}
         .btn-main:hover { background-color: #000050; }
@@ -44,20 +42,17 @@
         .btn-menos { background-color: #ffc107; color: #333; } 
         .btn-danger { background-color: #dc3545; } 
 
-        /* TABLAS */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; border: 1px solid #ddd; text-align: center; }
         th { background-color: #000080; color: white; }
         tr:nth-child(even) { background-color: #f2f2f2; }
         td:nth-child(2) { text-align: left; } 
         
-        /* DISEÑO DE VENTAS (GRID) */
         .grid-ventas { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
         @media (max-width: 768px) { .grid-ventas { grid-template-columns: 1fr; } }
         
         .total-venta { font-size: 28px; font-weight: bold; color: #000080; text-align: right; margin-top: 15px; border-top: 2px dashed #ccc; padding-top: 10px; }
 
-        /* LECTOR DE CÓDIGO FLOTANTE (Para que no choque en las pestañas) */
         #contenedor-lector { display: none; margin: 10px auto; width: 100%; max-width: 400px; border: 2px solid #000080; border-radius: 8px; overflow: hidden; }
     </style>
 </head>
@@ -82,7 +77,7 @@
                         <input type="text" id="clienteNombre" placeholder="Nombre (Opcional)">
                     </div>
                     <div class="form-group">
-                        <input type="number" id="clienteDoc" placeholder="Cédula / NIT (Opcional)">
+                        <input type="number" id="clienteDoc" placeholder="Cédula / Teléfono (Opcional)">
                     </div>
                 </div>
 
@@ -91,11 +86,13 @@
                     <div class="form-group">
                         <label>Buscar / Escanear Producto:</label>
                         <div class="input-con-boton">
-                            <input type="text" id="buscadorVentas" placeholder="Código o Nombre...">
+                            <input type="text" id="buscadorVentas" placeholder="Código o Nombre..." onkeypress="manejarEnter(event)">
+                            <button class="btn-anadir" onclick="procesarCodigoVenta()">➕</button>
                             <button class="btn-camara" onclick="iniciarEscaner('buscadorVentas')">📷</button>
                         </div>
                     </div>
-                    <div id="visor-camara-ventas"></div> </div>
+                    <div id="visor-camara-ventas"></div>
+                </div>
             </div>
 
             <div class="caja-blanca">
@@ -116,8 +113,8 @@
                     </table>
                 </div>
                 
-                <div class="total-venta">TOTAL: $0</div>
-                <button class="btn-main btn-cobrar">💵 REGISTRAR VENTA</button>
+                <div class="total-venta" id="textoTotalVenta">TOTAL: $0</div>
+                <button class="btn-main btn-cobrar" onclick="registrarVenta()">💵 REGISTRAR VENTA</button>
             </div>
         </div>
     </div>
@@ -133,7 +130,9 @@
                 </div>
             </div>
             
-            <div id="contenedor-lector"></div> <div class="form-group">
+            <div id="contenedor-lector"></div> 
+
+            <div class="form-group">
                 <label for="nombre">Nombre del Producto:</label>
                 <input type="text" id="nombre" placeholder="Ej: Case Space Samsung A17">
             </div>
@@ -171,7 +170,7 @@
                         </tr>
                     </thead>
                     <tbody id="tablaInventario">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -196,14 +195,10 @@
 
         let html5QrCode;
         
-        // La cámara ahora sabe a qué input (caja) debe enviar el código
         function iniciarEscaner(inputIdDestino) {
             const contenedor = document.getElementById('contenedor-lector');
-            
-            // Movemos el contenedor de la cámara debajo del input que se está usando
             const inputElement = document.getElementById(inputIdDestino);
             inputElement.parentNode.parentNode.appendChild(contenedor);
-            
             contenedor.style.display = 'block';
             
             if(html5QrCode) {
@@ -220,14 +215,24 @@
                     beep.play();
                     html5QrCode.stop().then(() => {
                         contenedor.style.display = 'none';
-                        // Si estamos en inventario, pasa al nombre. Si estamos en caja, podría buscar automáticamente luego.
-                        if(inputIdDestino === 'idProducto') document.getElementById('nombre').focus();
+                        // Si estamos en caja, procesar automáticamente el código escaneado
+                        if(inputIdDestino === 'buscadorVentas') {
+                            procesarCodigoVenta();
+                        } else {
+                            document.getElementById('nombre').focus();
+                        }
                     });
                 },
                 (mensajeError) => { }
             ).catch((err) => {
                 alert("Error al iniciar la cámara. Asegúrate de darle permisos.");
             });
+        }
+
+        function manejarEnter(event) {
+            if (event.key === "Enter") {
+                procesarCodigoVenta();
+            }
         }
 
         function filtrarTabla() {
@@ -237,11 +242,9 @@
             for (let i = 0; i < filas.length; i++) {
                 const celdaCodigo = filas[i].getElementsByTagName('td')[0];
                 const celdaNombre = filas[i].getElementsByTagName('td')[1];
-                
                 if (celdaCodigo || celdaNombre) {
                     const textoCodigo = celdaCodigo.textContent || celdaCodigo.innerText;
                     const textoNombre = celdaNombre.textContent || celdaNombre.innerText;
-                    
                     if (textoCodigo.toLowerCase().indexOf(textoBusqueda) > -1 || textoNombre.toLowerCase().indexOf(textoBusqueda) > -1) {
                         filas[i].style.display = "";
                     } else {
@@ -268,71 +271,23 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.guardarProducto = async function() {
-            const idProd = document.getElementById('idProducto').value.trim();
-            const nombre = document.getElementById('nombre').value.trim();
-            const compra = document.getElementById('compra').value;
-            const venta = document.getElementById('venta').value;
-            const stock = document.getElementById('stock').value;
+        // Variables Globales para la Caja
+        let inventarioActual = []; 
+        let carrito = []; 
+        let totalCaja = 0;
 
-            if(!idProd || !nombre || !compra || !venta || !stock) {
-                alert("Por favor, llena todos los campos.");
-                return;
-            }
-
-            try {
-                const q = query(
-                    collection(db, "productos"), 
-                    where("codigo", "==", idProd),
-                    where("nombre", "==", nombre) 
-                );
-                const querySnapshot = await getDocs(q);
-
-                if (!querySnapshot.empty) {
-                    const docExistente = querySnapshot.docs[0];
-                    const stockAnterior = docExistente.data().stock;
-                    const nuevoStock = stockAnterior + Number(stock);
-
-                    await updateDoc(doc(db, "productos", docExistente.id), {
-                        stock: nuevoStock,
-                        precio_compra: Number(compra), 
-                        precio_venta: Number(venta)
-                    });
-                    
-                    alert(`¡Actualizado! Se sumaron ${stock} unidades. El nuevo stock de "${nombre}" es de ${nuevoStock}.`);
-                } else {
-                    await addDoc(collection(db, "productos"), {
-                        codigo: idProd,
-                        nombre: nombre,
-                        precio_compra: Number(compra),
-                        precio_venta: Number(venta),
-                        stock: Number(stock)
-                    });
-                    
-                    alert("¡Nuevo producto registrado exitosamente!");
-                }
-                
-                document.getElementById('idProducto').value = '';
-                document.getElementById('nombre').value = '';
-                document.getElementById('compra').value = '';
-                document.getElementById('venta').value = '';
-                document.getElementById('stock').value = '';
-                
-            } catch (error) {
-                console.error("Error al guardar: ", error);
-                alert("Hubo un error al guardar o actualizar el producto.");
-            }
-        };
-
-        // CARGAR INVENTARIO EN LA TABLA
+        // 1. CARGAR INVENTARIO EN VIVO (Llena la tabla y nuestra variable global)
         const referenciaProductos = collection(db, "productos");
-        
         onSnapshot(referenciaProductos, (querySnapshot) => {
             const tabla = document.getElementById('tablaInventario');
             tabla.innerHTML = ''; 
+            inventarioActual = []; // Limpiamos la memoria
             
             querySnapshot.forEach((documento) => {
-                const producto = documento.data();
+                let producto = documento.data();
+                producto.idFirebase = documento.id; // Clave para luego descontar
+                inventarioActual.push(producto);
+
                 const fila = `
                     <tr>
                         <td>${producto.codigo}</td>
@@ -349,31 +304,142 @@
                 `;
                 tabla.innerHTML += fila;
             });
-            
-            if (typeof filtrarTabla === "function") {
-                filtrarTabla();
-            }
+            if (typeof filtrarTabla === "function") filtrarTabla();
         });
+
+        // 2. FUNCIONES DE INVENTARIO
+        window.guardarProducto = async function() {
+            const idProd = document.getElementById('idProducto').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const compra = document.getElementById('compra').value;
+            const venta = document.getElementById('venta').value;
+            const stock = document.getElementById('stock').value;
+
+            if(!idProd || !nombre || !compra || !venta || !stock) return alert("Por favor, llena todos los campos.");
+
+            try {
+                const q = query(collection(db, "productos"), where("codigo", "==", idProd), where("nombre", "==", nombre));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const docExistente = querySnapshot.docs[0];
+                    const nuevoStock = docExistente.data().stock + Number(stock);
+                    await updateDoc(doc(db, "productos", docExistente.id), { stock: nuevoStock, precio_compra: Number(compra), precio_venta: Number(venta) });
+                    alert(`¡Actualizado! Nuevo stock de "${nombre}" es ${nuevoStock}.`);
+                } else {
+                    await addDoc(collection(db, "productos"), { codigo: idProd, nombre: nombre, precio_compra: Number(compra), precio_venta: Number(venta), stock: Number(stock) });
+                    alert("¡Nuevo producto registrado!");
+                }
+                document.getElementById('idProducto').value = ''; document.getElementById('nombre').value = ''; document.getElementById('compra').value = ''; document.getElementById('venta').value = ''; document.getElementById('stock').value = '';
+            } catch (error) { alert("Error al guardar."); }
+        };
 
         window.actualizarStock = async function(idFirebase, stockActual, cambio) {
             const nuevoStock = stockActual + cambio;
-            if (nuevoStock < 0) {
-                alert("El stock no puede ser menor a 0.");
-                return;
-            }
-            try {
-                const productoRef = doc(db, "productos", idFirebase);
-                await updateDoc(productoRef, { stock: nuevoStock });
-            } catch (error) {
-                console.error("Error al actualizar: ", error);
-            }
+            if (nuevoStock < 0) return alert("El stock no puede ser menor a 0.");
+            await updateDoc(doc(db, "productos", idFirebase), { stock: nuevoStock });
         };
 
         window.eliminarProducto = async function(idFirebase) {
-            if(confirm("¿Seguro que deseas eliminar este producto?")) {
-                await deleteDoc(doc(db, "productos", idFirebase));
+            if(confirm("¿Seguro que deseas eliminar este producto?")) await deleteDoc(doc(db, "productos", idFirebase));
+        };
+
+        // 3. LÓGICA DE CAJA / POS
+        window.procesarCodigoVenta = function() {
+            const textoBuscado = document.getElementById('buscadorVentas').value.trim().toLowerCase();
+            if (!textoBuscado) return;
+
+            // Busca por código exacto o por nombre parecido
+            const productoEncontrado = inventarioActual.find(p => p.codigo.toLowerCase() === textoBuscado || p.nombre.toLowerCase().includes(textoBuscado));
+
+            if (productoEncontrado) {
+                // Verificar si hay stock disponible
+                let cantidadEnCarrito = 0;
+                let itemPrevio = carrito.find(item => item.idFirebase === productoEncontrado.idFirebase);
+                if (itemPrevio) cantidadEnCarrito = itemPrevio.cantidad;
+
+                if (productoEncontrado.stock > cantidadEnCarrito) {
+                    if (itemPrevio) {
+                        itemPrevio.cantidad += 1; // Suma 1 si ya estaba en el carrito
+                    } else {
+                        carrito.push({ ...productoEncontrado, cantidad: 1 }); // Agrega nuevo
+                    }
+                    document.getElementById('buscadorVentas').value = ''; // Limpia el input
+                    renderizarCarrito();
+                } else {
+                    alert("¡Atención! No hay suficiente stock en inventario de este producto.");
+                }
+            } else {
+                alert("Producto no encontrado en la base de datos.");
             }
-        }
+        };
+
+        window.renderizarCarrito = function() {
+            const tabla = document.getElementById('tablaCarrito');
+            tabla.innerHTML = '';
+            totalCaja = 0;
+
+            carrito.forEach((item, index) => {
+                const subtotal = item.precio_venta * item.cantidad;
+                totalCaja += subtotal;
+
+                const fila = `
+                    <tr>
+                        <td style="font-weight:bold;">${item.cantidad}</td>
+                        <td>${item.nombre}</td>
+                        <td>$${item.precio_venta.toLocaleString('es-CO')}</td>
+                        <td>$${subtotal.toLocaleString('es-CO')}</td>
+                        <td><button class="btn-accion btn-danger" onclick="quitarDelCarrito(${index})">X</button></td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+
+            document.getElementById('textoTotalVenta').innerText = `TOTAL: $${totalCaja.toLocaleString('es-CO')}`;
+        };
+
+        window.quitarDelCarrito = function(index) {
+            carrito.splice(index, 1);
+            renderizarCarrito();
+        };
+
+        window.registrarVenta = async function() {
+            if (carrito.length === 0) return alert("El carrito está vacío.");
+
+            const cliente = document.getElementById('clienteNombre').value || "Cliente Mostrador";
+            const documentoCli = document.getElementById('clienteDoc').value || "N/A";
+
+            if (!confirm(`¿Confirmas la venta por $${totalCaja.toLocaleString('es-CO')}?`)) return;
+
+            try {
+                // 1. Restar el stock de cada producto en Firebase
+                for (let item of carrito) {
+                    const nuevoStock = item.stock - item.cantidad;
+                    await updateDoc(doc(db, "productos", item.idFirebase), { stock: nuevoStock });
+                }
+
+                // 2. Guardar el registro de la venta (Para la contabilidad)
+                await addDoc(collection(db, "ventas"), {
+                    fecha: new Date().toISOString(),
+                    cliente_nombre: cliente,
+                    cliente_doc: documentoCli,
+                    total_venta: totalCaja,
+                    articulos: carrito.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, subtotal: i.precio_venta * i.cantidad }))
+                });
+
+                alert("¡Venta registrada exitosamente!");
+                
+                // 3. Limpiar todo
+                carrito = [];
+                renderizarCarrito();
+                document.getElementById('clienteNombre').value = '';
+                document.getElementById('clienteDoc').value = '';
+
+            } catch (error) {
+                console.error("Error al registrar venta: ", error);
+                alert("Hubo un error al procesar la venta.");
+            }
+        };
     </script>
 </body>
 </html>
