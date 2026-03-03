@@ -55,6 +55,14 @@
 
         #contenedor-lector { display: none; margin: 10px auto; width: 100%; max-width: 400px; border: 2px solid #000080; border-radius: 8px; overflow: hidden; }
 
+        /* --- ESTILOS DEL MENÚ DESPLEGABLE (NUEVO) --- */
+        .contenedor-buscador { position: relative; }
+        .sugerencias-box { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #000080; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 16px rgba(0,0,0,0.2); display: none; }
+        .sugerencia-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .sugerencia-item:hover { background-color: #f4f4f9; border-left: 4px solid #000080; }
+        .sugerencia-item strong { color: #000080; }
+        .sugerencia-item small { color: #555; display: block; margin-top: 4px; font-weight: bold; }
+
         /* Contenedor de Notificaciones (Toasts) */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; background-color: #fff; color: #333; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-weight: bold; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #000080; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
@@ -120,13 +128,14 @@
 
                 <div class="caja-blanca">
                     <h3 style="margin-top:0; color: #000080;">Agregar al Carrito</h3>
-                    <div class="form-group">
+                    <div class="form-group contenedor-buscador">
                         <label>Buscar / Escanear Producto:</label>
                         <div class="input-con-boton">
-                            <input type="text" id="buscadorVentas" placeholder="Código o Nombre..." onkeypress="manejarEnter(event)">
+                            <input type="text" id="buscadorVentas" placeholder="Escribe el nombre o escanea..." onkeyup="mostrarSugerencias()" onkeypress="manejarEnter(event)" autocomplete="off">
                             <button class="btn-anadir" onclick="procesarCodigoVenta()">➕</button>
                             <button class="btn-camara" onclick="iniciarEscaner('buscadorVentas')">📷</button>
                         </div>
+                        <div id="sugerenciasVentas" class="sugerencias-box"></div>
                     </div>
                     <div id="visor-camara-ventas"></div>
                 </div>
@@ -262,7 +271,10 @@
                     let beep = new Audio('https://www.soundjay.com/button/beep-07.wav'); beep.play();
                     html5QrCode.stop().then(() => {
                         contenedor.style.display = 'none';
-                        if(inputIdDestino === 'buscadorVentas') { procesarCodigoVenta(); } 
+                        if(inputIdDestino === 'buscadorVentas') { 
+                            // Si escanea en caja, forzamos la búsqueda exacta por código
+                            procesarCodigoVenta(); 
+                        } 
                         else { document.getElementById('nombre').focus(); }
                     });
                 }, (mensajeError) => { }
@@ -287,18 +299,22 @@
             }
         }
 
-        // --- FUNCIÓN PARA GENERAR EL TICKET DE 58MM ---
+        // --- OCULTAR SUGERENCIAS AL HACER CLIC AFUERA ---
+        document.addEventListener('click', function(event) {
+            const cajaSugerencias = document.getElementById('sugerenciasVentas');
+            const inputBuscador = document.getElementById('buscadorVentas');
+            if (event.target !== inputBuscador && event.target !== cajaSugerencias) {
+                cajaSugerencias.style.display = 'none';
+            }
+        });
+
         function imprimirTicketFantasma(cliente, documento, itemsCarrito, totalVenta) {
             const frame = document.getElementById('frameImpresion');
             const doc = frame.contentWindow.document;
-            
             const fechaActual = new Date().toLocaleString('es-CO');
-            
-            // Generamos las filas de los productos
             let filasProductos = '';
             itemsCarrito.forEach(item => {
                 let sub = item.cantidad * item.precio_venta;
-                // Cortamos el nombre del producto para que quepa en el papel estrecho
                 let nombreCorto = item.nombre.substring(0, 15); 
                 filasProductos += `<tr>
                     <td>${item.cantidad}</td>
@@ -307,11 +323,8 @@
                 </tr>`;
             });
 
-            // Plantilla HTML del Ticket
             const htmlTicket = `
-            <html>
-            <head>
-                <style>
+            <html><head><style>
                     body { font-family: 'Courier New', Courier, monospace; font-size: 12px; margin: 0; padding: 0; width: 58mm; color: black; }
                     .ticket-header { text-align: center; margin-bottom: 10px; }
                     .ticket-header h2 { margin: 0; font-size: 18px; font-weight: bold; border-bottom: 1px dashed black; padding-bottom: 5px;}
@@ -324,40 +337,16 @@
                     .right { text-align: right; }
                     .ticket-total { text-align: right; font-weight: bold; font-size: 14px; margin-top: 5px; border-top: 1px dashed black; padding-top: 5px; }
                     .ticket-footer { text-align: center; margin-top: 15px; font-size: 10px; border-top: 1px dashed black; padding-top: 5px; }
-                </style>
-            </head>
-            <body>
-               <div class="ticket-header">
-                   <h2>REVOLT</h2>
-                   <p>Professional Technical Service</p>
-               </div>
-               <div class="ticket-info">
-                   <p>Fecha: ${fechaActual}</p>
-                   <p>Cliente: ${cliente}</p>
-                   <p>Doc/Tel: ${documento}</p>
-               </div>
-               <table class="ticket-items">
-                   <tr><th>Cant</th><th>Desc</th><th class="right">Total</th></tr>
-                   ${filasProductos}
-               </table>
+                </style></head><body>
+               <div class="ticket-header"><h2>REVOLT</h2><p>Professional Technical Service</p></div>
+               <div class="ticket-info"><p>Fecha: ${fechaActual}</p><p>Cliente: ${cliente}</p><p>Doc/Tel: ${documento}</p></div>
+               <table class="ticket-items"><tr><th>Cant</th><th>Desc</th><th class="right">Total</th></tr>${filasProductos}</table>
                <div class="ticket-total">TOTAL: $${totalVenta.toLocaleString('es-CO')}</div>
-               <div class="ticket-footer">
-                   ¡Gracias por su compra!<br>
-                   Conserve este recibo para efectos de garantia.<br><br>
-                   - - - - - - - - - - - - 
-               </div>
-            </body>
-            </html>`;
+               <div class="ticket-footer">¡Gracias por su compra!<br>Conserve este recibo para efectos de garantia.<br><br>- - - - - - - - - - - - </div>
+            </body></html>`;
 
-            doc.open();
-            doc.write(htmlTicket);
-            doc.close();
-            
-            // Le damos un segundo para que cargue y lanzamos la impresión
-            setTimeout(() => {
-                frame.contentWindow.focus();
-                frame.contentWindow.print();
-            }, 500);
+            doc.open(); doc.write(htmlTicket); doc.close();
+            setTimeout(() => { frame.contentWindow.focus(); frame.contentWindow.print(); }, 500);
         }
     </script>
 
@@ -451,12 +440,41 @@
             }
         };
 
-        window.procesarCodigoVenta = function() {
-            const textoBuscado = document.getElementById('buscadorVentas').value.trim().toLowerCase();
-            if (!textoBuscado) return;
+        // --- NUEVA LÓGICA DE SUGERENCIAS Y AGREGAR AL CARRITO ---
+        
+        window.mostrarSugerencias = function() {
+            const texto = document.getElementById('buscadorVentas').value.trim().toLowerCase();
+            const cajaSugerencias = document.getElementById('sugerenciasVentas');
+            cajaSugerencias.innerHTML = '';
 
-            const productoEncontrado = inventarioActual.find(p => p.codigo.toLowerCase() === textoBuscado || p.nombre.toLowerCase().includes(textoBuscado));
+            if (texto.length === 0) {
+                cajaSugerencias.style.display = 'none';
+                return;
+            }
 
+            // Filtrar inventario por código o nombre
+            const resultados = inventarioActual.filter(p => 
+                p.codigo.toLowerCase().includes(texto) || 
+                p.nombre.toLowerCase().includes(texto)
+            );
+
+            if (resultados.length > 0) {
+                resultados.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'sugerencia-item';
+                    div.innerHTML = `<strong>${p.codigo}</strong> - ${p.nombre} <br><small style="color:${p.stock > 0 ? '#28a745' : '#dc3545'}">Stock disponible: ${p.stock} | Precio: $${p.precio_venta.toLocaleString('es-CO')}</small>`;
+                    // Al hacer clic, se agrega el producto exacto al carrito
+                    div.onclick = () => agregarProductoAlCarritoExacto(p.idFirebase);
+                    cajaSugerencias.appendChild(div);
+                });
+                cajaSugerencias.style.display = 'block';
+            } else {
+                cajaSugerencias.style.display = 'none';
+            }
+        };
+
+        window.agregarProductoAlCarritoExacto = function(idFirebase) {
+            const productoEncontrado = inventarioActual.find(p => p.idFirebase === idFirebase);
             if (productoEncontrado) {
                 let cantidadEnCarrito = 0;
                 let itemPrevio = carrito.find(item => item.idFirebase === productoEncontrado.idFirebase);
@@ -465,13 +483,36 @@
                 if (productoEncontrado.stock > cantidadEnCarrito) {
                     if (itemPrevio) { itemPrevio.cantidad += 1; } 
                     else { carrito.push({ ...productoEncontrado, cantidad: 1 }); }
+                    
                     document.getElementById('buscadorVentas').value = ''; 
+                    document.getElementById('sugerenciasVentas').style.display = 'none';
                     renderizarCarrito();
                 } else {
-                    mostrarAlerta("No hay suficiente stock en inventario.", "error");
+                    mostrarAlerta(`No hay suficiente stock de ${productoEncontrado.nombre}.`, "error");
                 }
+            }
+        };
+
+        // Modificamos procesarCodigoVenta para que priorice el escáner exacto o el botón "+"
+        window.procesarCodigoVenta = function() {
+            const textoBuscado = document.getElementById('buscadorVentas').value.trim().toLowerCase();
+            if (!textoBuscado) return;
+
+            // Busca si hay coincidencia EXACTA del código (Ideal para el escáner)
+            let productoExacto = inventarioActual.find(p => p.codigo.toLowerCase() === textoBuscado);
+
+            if (productoExacto) {
+                agregarProductoAlCarritoExacto(productoExacto.idFirebase);
             } else {
-                mostrarAlerta("Producto no encontrado en la base de datos.", "alerta");
+                // Si no hay código exacto pero sí coincidencias de texto, avisamos al usuario que use la lista
+                const parciales = inventarioActual.filter(p => p.nombre.toLowerCase().includes(textoBuscado));
+                if (parciales.length === 1) {
+                    agregarProductoAlCarritoExacto(parciales[0].idFirebase);
+                } else if (parciales.length > 1) {
+                    mostrarAlerta("Hay varios productos. Selecciona uno de la lista desplegable.", "alerta");
+                } else {
+                    mostrarAlerta("Producto no encontrado en el inventario.", "error");
+                }
             }
         };
 
@@ -513,16 +554,13 @@
             if (!confirmado) return;
 
             try {
-                // 1. Mandar a imprimir el ticket antes de borrar el carrito
                 imprimirTicketFantasma(cliente, documentoCli, carrito, totalCaja);
 
-                // 2. Descontar inventario
                 for (let item of carrito) {
                     const nuevoStock = item.stock - item.cantidad;
                     await updateDoc(doc(db, "productos", item.idFirebase), { stock: nuevoStock });
                 }
 
-                // 3. Guardar registro de la venta
                 await addDoc(collection(db, "ventas"), {
                     fecha: new Date().toISOString(),
                     cliente_nombre: cliente,
@@ -533,7 +571,6 @@
 
                 mostrarAlerta("¡Venta registrada exitosamente!", "exito");
                 
-                // 4. Limpiar caja
                 carrito = [];
                 renderizarCarrito();
                 document.getElementById('clienteNombre').value = '';
