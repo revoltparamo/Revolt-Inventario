@@ -55,7 +55,7 @@
 
         #contenedor-lector { display: none; margin: 10px auto; width: 100%; max-width: 400px; border: 2px solid #000080; border-radius: 8px; overflow: hidden; }
 
-        /* --- ESTILOS DEL MENÚ DESPLEGABLE (NUEVO) --- */
+        /* --- ESTILOS DEL MENÚ DESPLEGABLE --- */
         .contenedor-buscador { position: relative; }
         .sugerencias-box { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #000080; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 16px rgba(0,0,0,0.2); display: none; }
         .sugerencia-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
@@ -271,10 +271,7 @@
                     let beep = new Audio('https://www.soundjay.com/button/beep-07.wav'); beep.play();
                     html5QrCode.stop().then(() => {
                         contenedor.style.display = 'none';
-                        if(inputIdDestino === 'buscadorVentas') { 
-                            // Si escanea en caja, forzamos la búsqueda exacta por código
-                            procesarCodigoVenta(); 
-                        } 
+                        if(inputIdDestino === 'buscadorVentas') { procesarCodigoVenta(); } 
                         else { document.getElementById('nombre').focus(); }
                     });
                 }, (mensajeError) => { }
@@ -299,7 +296,6 @@
             }
         }
 
-        // --- OCULTAR SUGERENCIAS AL HACER CLIC AFUERA ---
         document.addEventListener('click', function(event) {
             const cajaSugerencias = document.getElementById('sugerenciasVentas');
             const inputBuscador = document.getElementById('buscadorVentas');
@@ -410,20 +406,48 @@
             if(!idProd || !nombre || !compra || !venta || !stock) return mostrarAlerta("Por favor, llena todos los campos.", "alerta");
 
             try {
-                const q = query(collection(db, "productos"), where("codigo", "==", idProd), where("nombre", "==", nombre));
-                const querySnapshot = await getDocs(q);
+                // LÓGICA DE BÚSQUEDA EN MEMORIA IGNORANDO MAYÚSCULAS/MINÚSCULAS
+                const idProdLower = idProd.toLowerCase();
+                const nombreLower = nombre.toLowerCase();
+                
+                const productoExistente = inventarioActual.find(p => 
+                    p.codigo.toLowerCase() === idProdLower && 
+                    p.nombre.toLowerCase() === nombreLower
+                );
 
-                if (!querySnapshot.empty) {
-                    const docExistente = querySnapshot.docs[0];
-                    const nuevoStock = docExistente.data().stock + Number(stock);
-                    await updateDoc(doc(db, "productos", docExistente.id), { stock: nuevoStock, precio_compra: Number(compra), precio_venta: Number(venta) });
+                if (productoExistente) {
+                    const nuevoStock = productoExistente.stock + Number(stock);
+                    
+                    await updateDoc(doc(db, "productos", productoExistente.idFirebase), { 
+                        stock: nuevoStock, 
+                        precio_compra: Number(compra), 
+                        precio_venta: Number(venta),
+                        nombre: nombre, 
+                        codigo: idProd 
+                    });
+                    
                     mostrarAlerta(`Se sumaron ${stock} unidades. Nuevo stock de "${nombre}" es ${nuevoStock}.`, "exito");
                 } else {
-                    await addDoc(collection(db, "productos"), { codigo: idProd, nombre: nombre, precio_compra: Number(compra), precio_venta: Number(venta), stock: Number(stock) });
+                    await addDoc(collection(db, "productos"), { 
+                        codigo: idProd, 
+                        nombre: nombre, 
+                        precio_compra: Number(compra), 
+                        precio_venta: Number(venta), 
+                        stock: Number(stock) 
+                    });
+                    
                     mostrarAlerta("Producto añadido correctamente.", "exito");
                 }
-                document.getElementById('idProducto').value = ''; document.getElementById('nombre').value = ''; document.getElementById('compra').value = ''; document.getElementById('venta').value = ''; document.getElementById('stock').value = '';
-            } catch (error) { mostrarAlerta("Error al conectar con la base de datos.", "error"); }
+                
+                document.getElementById('idProducto').value = ''; 
+                document.getElementById('nombre').value = ''; 
+                document.getElementById('compra').value = ''; 
+                document.getElementById('venta').value = ''; 
+                document.getElementById('stock').value = '';
+                
+            } catch (error) { 
+                mostrarAlerta("Error al conectar con la base de datos.", "error"); 
+            }
         };
 
         window.actualizarStock = async function(idFirebase, stockActual, cambio) {
@@ -439,8 +463,6 @@
                 mostrarAlerta("Producto eliminado.", "exito");
             }
         };
-
-        // --- NUEVA LÓGICA DE SUGERENCIAS Y AGREGAR AL CARRITO ---
         
         window.mostrarSugerencias = function() {
             const texto = document.getElementById('buscadorVentas').value.trim().toLowerCase();
@@ -452,7 +474,6 @@
                 return;
             }
 
-            // Filtrar inventario por código o nombre
             const resultados = inventarioActual.filter(p => 
                 p.codigo.toLowerCase().includes(texto) || 
                 p.nombre.toLowerCase().includes(texto)
@@ -463,7 +484,6 @@
                     const div = document.createElement('div');
                     div.className = 'sugerencia-item';
                     div.innerHTML = `<strong>${p.codigo}</strong> - ${p.nombre} <br><small style="color:${p.stock > 0 ? '#28a745' : '#dc3545'}">Stock disponible: ${p.stock} | Precio: $${p.precio_venta.toLocaleString('es-CO')}</small>`;
-                    // Al hacer clic, se agrega el producto exacto al carrito
                     div.onclick = () => agregarProductoAlCarritoExacto(p.idFirebase);
                     cajaSugerencias.appendChild(div);
                 });
@@ -493,18 +513,15 @@
             }
         };
 
-        // Modificamos procesarCodigoVenta para que priorice el escáner exacto o el botón "+"
         window.procesarCodigoVenta = function() {
             const textoBuscado = document.getElementById('buscadorVentas').value.trim().toLowerCase();
             if (!textoBuscado) return;
 
-            // Busca si hay coincidencia EXACTA del código (Ideal para el escáner)
             let productoExacto = inventarioActual.find(p => p.codigo.toLowerCase() === textoBuscado);
 
             if (productoExacto) {
                 agregarProductoAlCarritoExacto(productoExacto.idFirebase);
             } else {
-                // Si no hay código exacto pero sí coincidencias de texto, avisamos al usuario que use la lista
                 const parciales = inventarioActual.filter(p => p.nombre.toLowerCase().includes(textoBuscado));
                 if (parciales.length === 1) {
                     agregarProductoAlCarritoExacto(parciales[0].idFirebase);
