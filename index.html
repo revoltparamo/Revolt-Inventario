@@ -8,9 +8,23 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 0; padding: 0; }
         
-        .header { background-color: #000080; padding: 15px 20px; color: white; text-align: center; }
-        .header h1 { margin: 0; font-size: 24px; letter-spacing: 2px; }
+        /* --- ESTILOS DE LA PANTALLA DE LOGIN --- */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000080 0%, #1a1a1a 100%); display: flex; justify-content: center; align-items: center; z-index: 99999; }
+        .login-box { background: white; padding: 40px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.3); text-align: center; }
+        .login-box h2 { color: #000080; margin-top: 0; font-size: 28px; letter-spacing: 2px; margin-bottom: 25px;}
+        .login-box .form-group { text-align: left; margin-bottom: 20px; }
+        .login-box input[type="email"], .login-box input[type="password"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 20px; }
+        .checkbox-group input { width: 18px; height: 18px; cursor: pointer; }
+        .checkbox-group label { cursor: pointer; color: #555; font-size: 14px; font-weight: normal; margin: 0;}
         
+        /* --- ESTILOS DE LA APP PRINCIPAL --- */
+        .header { background-color: #000080; padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .header-left h1 { margin: 0; font-size: 24px; letter-spacing: 2px; }
+        .header-right { text-align: right; font-size: 14px; }
+        .btn-logout { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        .btn-logout:hover { background: #c82333; }
+
         .tab-menu { overflow: hidden; background-color: #1a1a1a; display: flex; justify-content: center; }
         .tab-menu button { background-color: inherit; color: #bbb; border: none; outline: none; cursor: pointer; padding: 14px 25px; transition: 0.3s; font-size: 16px; font-weight: bold; }
         .tab-menu button:hover { background-color: #333; color: white; }
@@ -62,7 +76,7 @@
         .sugerencia-item strong { color: #000080; }
         .sugerencia-item small { color: #555; display: block; margin-top: 4px; font-weight: bold; }
 
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; background-color: #fff; color: #333; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-weight: bold; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #000080; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
         .toast.show { transform: translateX(0); }
         .toast.exito { border-left-color: #28a745; }
@@ -71,7 +85,7 @@
         .toast-close { cursor: pointer; color: #999; font-size: 18px; margin-left: 15px; transition: 0.2s; }
         .toast-close:hover { color: #333; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(3px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 100000; backdrop-filter: blur(3px); }
         .modal-box { background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: aparecerModal 0.3s ease-out; }
         @keyframes aparecerModal { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-box h3 { color: #000080; margin-top: 0; font-size: 22px; margin-bottom: 20px; }
@@ -87,6 +101,25 @@
 
     <iframe id="frameImpresion" style="display:none;"></iframe>
     <div id="toast-container"></div>
+
+    <div id="pantalla-login" class="login-overlay">
+        <div class="login-box">
+            <h2>REVOLT</h2>
+            <div class="form-group">
+                <label>Correo Electrónico</label>
+                <input type="email" id="login-email" placeholder="usuario@revolt.com">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-password" placeholder="******">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="login-remember" checked>
+                <label for="login-remember">Mantener sesión activa</label>
+            </div>
+            <button class="btn-main" id="btn-ingresar">INGRESAR</button>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="custom-modal">
         <div class="modal-box">
@@ -117,125 +150,132 @@
         </div>
     </div>
 
-    <div class="header">
-        <h1>REVOLT</h1>
-        <small>Professional Technical Service</small>
-    </div>
+    <div id="app-principal" style="display: none;">
+        
+        <div class="header">
+            <div class="header-left">
+                <h1>REVOLT</h1>
+                <small>Professional Technical Service</small>
+            </div>
+            <div class="header-right">
+                <div id="user-display" style="font-weight: bold; margin-bottom: 5px;"></div>
+                <button class="btn-logout" id="btn-cerrar-sesion">Cerrar Sesión</button>
+            </div>
+        </div>
 
-    <div class="tab-menu">
-        <button class="tab-links active" onclick="abrirPestana(event, 'PestanaVentas')">💰 CAJA</button>
-        <button class="tab-links" onclick="abrirPestana(event, 'PestanaInventario')">📦 INVENTARIO</button>
-        <button class="tab-links" onclick="window.open('orden.html', '_blank')" style="border-left: 1px solid #333;">📄 ORDEN DE GARANTÍA</button>
-    </div>
+        <div class="tab-menu">
+            <button class="tab-links active" onclick="abrirPestana(event, 'PestanaVentas')">💰 CAJA</button>
+            <button class="tab-links" onclick="abrirPestana(event, 'PestanaInventario')">📦 INVENTARIO</button>
+            <button class="tab-links" onclick="window.open('orden.html', '_blank')" style="border-left: 1px solid #333;">📄 ORDEN DE GARANTÍA</button>
+        </div>
 
-    <div id="PestanaVentas" class="tab-content active">
-        <div class="grid-ventas">
-            <div>
-                <div class="caja-blanca">
-                    <h3 style="margin-top:0; color: #000080;">Datos del Cliente</h3>
-                    <div class="form-group">
-                        <input type="text" id="clienteNombre" placeholder="Nombre (Opcional)">
-                    </div>
-                    <div class="form-group">
-                        <input type="number" id="clienteDoc" placeholder="Cédula / Teléfono (Opcional)">
-                    </div>
-                </div>
-
-                <div class="caja-blanca">
-                    <h3 style="margin-top:0; color: #000080;">Agregar al Carrito</h3>
-                    <div class="form-group contenedor-buscador">
-                        <label>Buscar Producto o Servicio (Escribe "Reparacion"):</label>
-                        <div class="input-con-boton">
-                            <input type="text" id="buscadorVentas" placeholder="Escribe nombre, código, o 'reparacion'..." onkeyup="mostrarSugerencias()" onkeypress="manejarEnter(event)" autocomplete="off">
-                            <button class="btn-anadir" onclick="procesarCodigoVenta()">➕</button>
-                            <button class="btn-camara" onclick="iniciarEscaner('buscadorVentas')">📷</button>
+        <div id="PestanaVentas" class="tab-content active">
+            <div class="grid-ventas">
+                <div>
+                    <div class="caja-blanca">
+                        <h3 style="margin-top:0; color: #000080;">Datos del Cliente</h3>
+                        <div class="form-group">
+                            <input type="text" id="clienteNombre" placeholder="Nombre (Opcional)">
                         </div>
-                        <div id="sugerenciasVentas" class="sugerencias-box"></div>
+                        <div class="form-group">
+                            <input type="number" id="clienteDoc" placeholder="Cédula / Teléfono (Opcional)">
+                        </div>
                     </div>
-                    <div id="visor-camara-ventas"></div>
+
+                    <div class="caja-blanca">
+                        <h3 style="margin-top:0; color: #000080;">Agregar al Carrito</h3>
+                        <div class="form-group contenedor-buscador">
+                            <label>Buscar Producto o Servicio (Escribe "Reparacion"):</label>
+                            <div class="input-con-boton">
+                                <input type="text" id="buscadorVentas" placeholder="Escribe nombre, código, o 'reparacion'..." onkeyup="mostrarSugerencias()" onkeypress="manejarEnter(event)" autocomplete="off">
+                                <button class="btn-anadir" onclick="procesarCodigoVenta()">➕</button>
+                                <button class="btn-camara" onclick="iniciarEscaner('buscadorVentas')">📷</button>
+                            </div>
+                            <div id="sugerenciasVentas" class="sugerencias-box"></div>
+                        </div>
+                        <div id="visor-camara-ventas"></div>
+                    </div>
                 </div>
+
+                <div class="caja-blanca">
+                    <h3 style="margin-top:0; color: #000080;">Detalle de Factura</h3>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cant.</th>
+                                    <th>Item / Servicio</th>
+                                    <th>Precio Unit.</th>
+                                    <th>Subtotal</th>
+                                    <th>Quitar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaCarrito"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="total-venta" id="textoTotalVenta">TOTAL: $0</div>
+                    <button class="btn-main btn-cobrar" onclick="registrarVenta()">💵 REGISTRAR VENTA E IMPRIMIR</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="PestanaInventario" class="tab-content">
+            <div class="caja-blanca">
+                <h2 style="margin-top:0; color: #000080;">Ingreso de Mercancía</h2>
+                <div class="form-group">
+                    <label for="idProducto">ID / Código de Barras:</label>
+                    <div class="input-con-boton">
+                        <input type="text" id="idProducto" placeholder="Escanea el código o escríbelo manual">
+                        <button type="button" class="btn-camara" onclick="iniciarEscaner('idProducto')">📷 Escanear</button>
+                    </div>
+                </div>
+                
+                <div id="contenedor-lector"></div> 
+
+                <div class="form-group">
+                    <label for="nombre">Nombre del Producto:</label>
+                    <input type="text" id="nombre" placeholder="Ej: Case Space Samsung A17">
+                </div>
+                <div class="form-group">
+                    <label for="compra">Valor de Compra ($):</label>
+                    <input type="number" id="compra" placeholder="Ej: 15000">
+                </div>
+                <div class="form-group">
+                    <label for="venta">Valor de Venta ($):</label>
+                    <input type="number" id="venta" placeholder="Ej: 30000">
+                </div>
+                <div class="form-group">
+                    <label for="stock">Cantidad en Stock a ingresar:</label>
+                    <input type="number" id="stock" placeholder="Ej: 10">
+                </div>
+                <button class="btn-main" onclick="guardarProducto()">Guardar / Sumar Producto</button>
             </div>
 
             <div class="caja-blanca">
-                <h3 style="margin-top:0; color: #000080;">Detalle de Factura</h3>
+                <h2 style="margin-top:0; color: #000080;">INVENTARIO</h2>
+                <div class="form-group">
+                    <input type="text" id="buscador" placeholder="🔍 Buscar por código o nombre..." onkeyup="filtrarTabla()" style="border: 2px solid #000080; border-radius: 20px;">
+                </div>
+
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
                             <tr>
-                                <th>Cant.</th>
-                                <th>Item / Servicio</th>
-                                <th>Precio Unit.</th>
-                                <th>Subtotal</th>
-                                <th>Quitar</th>
+                                <th>Código</th>
+                                <th>Producto</th>
+                                <th>Compra</th>
+                                <th>Venta</th>
+                                <th>Stock</th>
+                                <th>Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="tablaCarrito"></tbody>
+                        <tbody id="tablaInventario"></tbody>
                     </table>
                 </div>
-                
-                <div class="total-venta" id="textoTotalVenta">TOTAL: $0</div>
-                <button class="btn-main btn-cobrar" onclick="registrarVenta()">💵 REGISTRAR VENTA E IMPRIMIR</button>
             </div>
         </div>
-    </div>
-
-    <div id="PestanaInventario" class="tab-content">
-        <div class="caja-blanca">
-            <h2 style="margin-top:0; color: #000080;">Ingreso de Mercancía</h2>
-            <div class="form-group">
-                <label for="idProducto">ID / Código de Barras:</label>
-                <div class="input-con-boton">
-                    <input type="text" id="idProducto" placeholder="Escanea el código o escríbelo manual">
-                    <button type="button" class="btn-camara" onclick="iniciarEscaner('idProducto')">📷 Escanear</button>
-                </div>
-            </div>
-            
-            <div id="contenedor-lector"></div> 
-
-            <div class="form-group">
-                <label for="nombre">Nombre del Producto:</label>
-                <input type="text" id="nombre" placeholder="Ej: Case Space Samsung A17">
-            </div>
-            <div class="form-group">
-                <label for="compra">Valor de Compra ($):</label>
-                <input type="number" id="compra" placeholder="Ej: 15000">
-            </div>
-            <div class="form-group">
-                <label for="venta">Valor de Venta ($):</label>
-                <input type="number" id="venta" placeholder="Ej: 30000">
-            </div>
-            <div class="form-group">
-                <label for="stock">Cantidad en Stock a ingresar:</label>
-                <input type="number" id="stock" placeholder="Ej: 10">
-            </div>
-            <button class="btn-main" onclick="guardarProducto()">Guardar / Sumar Producto</button>
-        </div>
-
-        <div class="caja-blanca">
-            <h2 style="margin-top:0; color: #000080;">INVENTARIO</h2>
-            <div class="form-group">
-                <input type="text" id="buscador" placeholder="🔍 Buscar por código o nombre..." onkeyup="filtrarTabla()" style="border: 2px solid #000080; border-radius: 20px;">
-            </div>
-
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Producto</th>
-                            <th>Compra</th>
-                            <th>Venta</th>
-                            <th>Stock</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaInventario"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <script>
+    </div> <script>
         function mostrarAlerta(mensaje, tipo = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -293,7 +333,16 @@
             ).catch((err) => { mostrarAlerta("Error al iniciar la cámara. Revisa los permisos.", "error"); });
         }
 
-        function manejarEnter(event) { if (event.key === "Enter") { procesarCodigoVenta(); } }
+        function manejarEnter(event) { 
+            if (event.key === "Enter") { 
+                if(document.getElementById('pantalla-login').style.display !== 'none') {
+                    document.getElementById('btn-ingresar').click();
+                } else {
+                    procesarCodigoVenta(); 
+                }
+            } 
+        }
+        document.addEventListener('keypress', manejarEnter);
 
         function filtrarTabla() {
             const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
@@ -314,7 +363,7 @@
         document.addEventListener('click', function(event) {
             const cajaSugerencias = document.getElementById('sugerenciasVentas');
             const inputBuscador = document.getElementById('buscadorVentas');
-            if (event.target !== inputBuscador && event.target !== cajaSugerencias) {
+            if (cajaSugerencias && inputBuscador && event.target !== inputBuscador && event.target !== cajaSugerencias) {
                 cajaSugerencias.style.display = 'none';
             }
         });
@@ -326,7 +375,6 @@
             let filasProductos = '';
             itemsCarrito.forEach(item => {
                 let sub = item.cantidad * item.precio_venta;
-                // Permitimos un poco más de caracteres para que los servicios se lean bien
                 let nombreCorto = item.nombre.substring(0, 18); 
                 filasProductos += `<tr>
                     <td>${item.cantidad}</td>
@@ -365,6 +413,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // Importamos las herramientas de Autenticación
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBY3EAZAhJnlKEPfeY7SfTlW5PxkXI59d8",
@@ -377,40 +427,103 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         let inventarioActual = []; 
-        window.carrito = []; // Lo hacemos global para acceder desde los modales de servicio
+        window.carrito = []; 
         let totalCaja = 0;
+        let unsubscribeInventario = null; // Para apagar la escucha de la base de datos al cerrar sesión
 
-        const referenciaProductos = collection(db, "productos");
-        onSnapshot(referenciaProductos, (querySnapshot) => {
-            const tabla = document.getElementById('tablaInventario');
-            tabla.innerHTML = ''; 
-            inventarioActual = []; 
-            
-            querySnapshot.forEach((documento) => {
-                let producto = documento.data();
-                producto.idFirebase = documento.id; 
-                inventarioActual.push(producto);
+        // --- SISTEMA DE INICIO Y CIERRE DE SESIÓN ---
 
-                const fila = `
-                    <tr>
-                        <td>${producto.codigo}</td>
-                        <td>${producto.nombre}</td>
-                        <td>$${producto.precio_compra.toLocaleString('es-CO')}</td>
-                        <td>$${producto.precio_venta.toLocaleString('es-CO')}</td>
-                        <td style="font-size: 1.1em; font-weight: bold;">${producto.stock}</td>
-                        <td>
-                            <button class="btn-accion btn-menos" onclick="actualizarStock('${documento.id}', ${producto.stock}, -1)">-</button>
-                            <button class="btn-accion btn-mas" onclick="actualizarStock('${documento.id}', ${producto.stock}, 1)">+</button>
-                            <button class="btn-accion btn-danger" onclick="eliminarProducto('${documento.id}')">X</button>
-                        </td>
-                    </tr>
-                `;
-                tabla.innerHTML += fila;
-            });
-            if (typeof filtrarTabla === "function") filtrarTabla();
+        // Escucha si hay alguien logueado
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Usuario validado: Oculta login, muestra app e inicia base de datos
+                document.getElementById('pantalla-login').style.display = 'none';
+                document.getElementById('app-principal').style.display = 'block';
+                document.getElementById('user-display').innerText = `👤 ${user.email}`;
+                iniciarBaseDeDatos();
+            } else {
+                // No hay usuario: Muestra login, oculta app y apaga base de datos
+                document.getElementById('pantalla-login').style.display = 'flex';
+                document.getElementById('app-principal').style.display = 'none';
+                if(unsubscribeInventario) unsubscribeInventario();
+                inventarioActual = [];
+                window.carrito = [];
+                renderizarCarrito();
+            }
         });
+
+        // Botón INGRESAR
+        document.getElementById('btn-ingresar').addEventListener('click', () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const remember = document.getElementById('login-remember').checked;
+
+            if(!email || !pass) return mostrarAlerta("Ingresa correo y contraseña", "alerta");
+
+            // Configurar si recuerda la sesión o no
+            const tipoPersistencia = remember ? browserLocalPersistence : browserSessionPersistence;
+
+            setPersistence(auth, tipoPersistencia)
+                .then(() => {
+                    return signInWithEmailAndPassword(auth, email, pass);
+                })
+                .catch((error) => {
+                    mostrarAlerta("Credenciales incorrectas o usuario no encontrado.", "error");
+                    console.error(error);
+                });
+        });
+
+        // Botón CERRAR SESIÓN
+        document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                mostrarAlerta("Sesión cerrada correctamente", "exito");
+                document.getElementById('login-email').value = '';
+                document.getElementById('login-password').value = '';
+            });
+        });
+
+
+        // --- LÓGICA DE INVENTARIO Y POS (Solo se ejecuta si hay sesión) ---
+        
+        function iniciarBaseDeDatos() {
+            const referenciaProductos = collection(db, "productos");
+            
+            // Guardamos la suscripción para poder cancelarla si cierran sesión
+            unsubscribeInventario = onSnapshot(referenciaProductos, (querySnapshot) => {
+                const tabla = document.getElementById('tablaInventario');
+                tabla.innerHTML = ''; 
+                inventarioActual = []; 
+                
+                querySnapshot.forEach((documento) => {
+                    let producto = documento.data();
+                    producto.idFirebase = documento.id; 
+                    inventarioActual.push(producto);
+
+                    const fila = `
+                        <tr>
+                            <td>${producto.codigo}</td>
+                            <td>${producto.nombre}</td>
+                            <td>$${producto.precio_compra.toLocaleString('es-CO')}</td>
+                            <td>$${producto.precio_venta.toLocaleString('es-CO')}</td>
+                            <td style="font-size: 1.1em; font-weight: bold;">${producto.stock}</td>
+                            <td>
+                                <button class="btn-accion btn-menos" onclick="actualizarStock('${documento.id}', ${producto.stock}, -1)">-</button>
+                                <button class="btn-accion btn-mas" onclick="actualizarStock('${documento.id}', ${producto.stock}, 1)">+</button>
+                                <button class="btn-accion btn-danger" onclick="eliminarProducto('${documento.id}')">X</button>
+                            </td>
+                        </tr>
+                    `;
+                    tabla.innerHTML += fila;
+                });
+                if (typeof filtrarTabla === "function") filtrarTabla();
+            }, (error) => {
+                console.error("Error leyendo inventario:", error);
+                mostrarAlerta("Error de permisos en la base de datos.", "error");
+            });
+        }
 
         window.guardarProducto = async function() {
             const idProd = document.getElementById('idProducto').value.trim();
@@ -453,24 +566,15 @@
             }
         };
         
-        // --- LÓGICA DE SUGERENCIAS CON INYECCIÓN DE SERVICIOS ---
         window.mostrarSugerencias = function() {
             const texto = document.getElementById('buscadorVentas').value.trim().toLowerCase();
             const cajaSugerencias = document.getElementById('sugerenciasVentas');
             cajaSugerencias.innerHTML = '';
 
-            if (texto.length === 0) {
-                cajaSugerencias.style.display = 'none';
-                return;
-            }
+            if (texto.length === 0) { cajaSugerencias.style.display = 'none'; return; }
 
-            // 1. Buscar en el inventario real
-            const resultados = inventarioActual.filter(p => 
-                p.codigo.toLowerCase().includes(texto) || 
-                p.nombre.toLowerCase().includes(texto)
-            );
+            const resultados = inventarioActual.filter(p => p.codigo.toLowerCase().includes(texto) || p.nombre.toLowerCase().includes(texto));
 
-            // 2. Inyectar ítems virtuales si el texto coincide con "rep" o "man" o "ser"
             if ("reparacion".includes(texto) || "reparación".includes(texto) || "servicio".includes(texto)) {
                 resultados.push({ isService: true, tipo: "Reparación", nombre: "🔧 Servicio de Reparación" });
             }
@@ -498,7 +602,6 @@
             }
         };
 
-        // --- FUNCIONES DEL MODAL DE SERVICIOS ---
         window.abrirModalServicio = function(tipo) {
             document.getElementById('modal-serv-titulo').innerText = `Agregar ${tipo}`;
             document.getElementById('serv-desc').value = `${tipo} de: `;
@@ -509,28 +612,23 @@
             document.getElementById('sugerenciasVentas').style.display = 'none';
         };
 
-        window.cerrarModalServicio = function() {
-            document.getElementById('modal-servicio').style.display = 'none';
-        };
+        window.cerrarModalServicio = function() { document.getElementById('modal-servicio').style.display = 'none'; };
 
         window.confirmarServicio = function() {
             const desc = document.getElementById('serv-desc').value.trim();
             const precio = Number(document.getElementById('serv-precio').value);
 
-            if(!desc || !precio || precio <= 0) {
-                return mostrarAlerta("Por favor ingresa una descripción y un precio mayor a 0.", "alerta");
-            }
+            if(!desc || !precio || precio <= 0) return mostrarAlerta("Por favor ingresa una descripción y un precio mayor a 0.", "alerta");
 
-            // Agregamos el servicio al carrito como un ítem especial
             carrito.push({
-                idFirebase: "SERV_" + Date.now(), // ID falso para que no choque
+                idFirebase: "SERV_" + Date.now(),
                 codigo: "SERVICIO",
                 nombre: desc,
                 precio_venta: precio,
                 precio_compra: 0,
-                stock: 9999, // Stock infinito simulado
+                stock: 9999,
                 cantidad: 1,
-                esServicioVirtual: true // Banderita secreta para NO descontar de Firebase
+                esServicioVirtual: true
             });
 
             cerrarModalServicio();
@@ -552,9 +650,7 @@
                     document.getElementById('buscadorVentas').value = ''; 
                     document.getElementById('sugerenciasVentas').style.display = 'none';
                     renderizarCarrito();
-                } else {
-                    mostrarAlerta(`No hay suficiente stock de ${productoEncontrado.nombre}.`, "error");
-                }
+                } else { mostrarAlerta(`No hay suficiente stock de ${productoEncontrado.nombre}.`, "error"); }
             }
         };
 
@@ -562,13 +658,8 @@
             const textoBuscado = document.getElementById('buscadorVentas').value.trim().toLowerCase();
             if (!textoBuscado) return;
 
-            // Si escribe la palabra clave, le abrimos el modal
-            if(textoBuscado === "reparacion" || textoBuscado === "reparación") {
-                return abrirModalServicio("Reparación");
-            }
-            if(textoBuscado === "mantenimiento") {
-                return abrirModalServicio("Mantenimiento");
-            }
+            if(textoBuscado === "reparacion" || textoBuscado === "reparación") return abrirModalServicio("Reparación");
+            if(textoBuscado === "mantenimiento") return abrirModalServicio("Mantenimiento");
 
             let productoExacto = inventarioActual.find(p => p.codigo.toLowerCase() === textoBuscado);
 
@@ -576,13 +667,9 @@
                 agregarProductoAlCarritoExacto(productoExacto.idFirebase);
             } else {
                 const parciales = inventarioActual.filter(p => p.nombre.toLowerCase().includes(textoBuscado));
-                if (parciales.length === 1) {
-                    agregarProductoAlCarritoExacto(parciales[0].idFirebase);
-                } else if (parciales.length > 1) {
-                    mostrarAlerta("Hay varios productos. Selecciona uno de la lista desplegable.", "alerta");
-                } else {
-                    mostrarAlerta("Producto no encontrado en el inventario.", "error");
-                }
+                if (parciales.length === 1) { agregarProductoAlCarritoExacto(parciales[0].idFirebase); } 
+                else if (parciales.length > 1) { mostrarAlerta("Hay varios productos. Selecciona uno de la lista desplegable.", "alerta"); } 
+                else { mostrarAlerta("Producto no encontrado en el inventario.", "error"); }
             }
         };
 
@@ -594,8 +681,6 @@
             carrito.forEach((item, index) => {
                 const subtotal = item.precio_venta * item.cantidad;
                 totalCaja += subtotal;
-
-                // Le ponemos una estrellita al icono si es un servicio
                 const iconoServicio = item.esServicioVirtual ? "🔧 " : "";
 
                 const fila = `
@@ -612,10 +697,7 @@
             document.getElementById('textoTotalVenta').innerText = `TOTAL: $${totalCaja.toLocaleString('es-CO')}`;
         };
 
-        window.quitarDelCarrito = function(index) {
-            carrito.splice(index, 1);
-            renderizarCarrito();
-        };
+        window.quitarDelCarrito = function(index) { carrito.splice(index, 1); renderizarCarrito(); };
 
         window.registrarVenta = async function() {
             if (carrito.length === 0) return mostrarAlerta("El carrito está vacío.", "alerta");
@@ -630,7 +712,6 @@
                 imprimirTicketFantasma(cliente, documentoCli, carrito, totalCaja);
 
                 for (let item of carrito) {
-                    // SOLO descuenta stock si NO es un servicio virtual
                     if (!item.esServicioVirtual) {
                         const nuevoStock = item.stock - item.cantidad;
                         await updateDoc(doc(db, "productos", item.idFirebase), { stock: nuevoStock });
@@ -647,15 +728,14 @@
 
                 mostrarAlerta("¡Venta registrada exitosamente!", "exito");
                 
-                carrito = [];
+                window.carrito = [];
                 renderizarCarrito();
                 document.getElementById('clienteNombre').value = '';
                 document.getElementById('clienteDoc').value = '';
 
-            } catch (error) {
-                mostrarAlerta("Hubo un error al procesar la venta.", "error");
-            }
+            } catch (error) { mostrarAlerta("Hubo un error al procesar la venta.", "error"); }
         };
     </script>
 </body>
 </html>
+
