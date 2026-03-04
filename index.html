@@ -21,7 +21,7 @@
         
         .caja-blanca { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
 
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
         label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
         input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         input:focus { border-color: #000080; outline: none; }
@@ -55,7 +55,6 @@
 
         #contenedor-lector { display: none; margin: 10px auto; width: 100%; max-width: 400px; border: 2px solid #000080; border-radius: 8px; overflow: hidden; }
 
-        /* --- ESTILOS DEL MENÚ DESPLEGABLE --- */
         .contenedor-buscador { position: relative; }
         .sugerencias-box { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #000080; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 16px rgba(0,0,0,0.2); display: none; }
         .sugerencia-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
@@ -63,7 +62,6 @@
         .sugerencia-item strong { color: #000080; }
         .sugerencia-item small { color: #555; display: block; margin-top: 4px; font-weight: bold; }
 
-        /* Contenedor de Notificaciones (Toasts) */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { min-width: 280px; background-color: #fff; color: #333; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-weight: bold; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #000080; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
         .toast.show { transform: translateX(0); }
@@ -73,13 +71,12 @@
         .toast-close { cursor: pointer; color: #999; font-size: 18px; margin-left: 15px; transition: 0.2s; }
         .toast-close:hover { color: #333; }
 
-        /* Modal Customizado (Preguntas) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(3px); }
         .modal-box { background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: aparecerModal 0.3s ease-out; }
         @keyframes aparecerModal { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-box h3 { color: #000080; margin-top: 0; font-size: 22px; }
+        .modal-box h3 { color: #000080; margin-top: 0; font-size: 22px; margin-bottom: 20px; }
         .modal-botones { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
-        .modal-btn { padding: 12px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .modal-btn { padding: 12px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; width: 100%;}
         .btn-si { background: #28a745; color: white; }
         .btn-si:hover { background: #218838; }
         .btn-no { background: #dc3545; color: white; }
@@ -89,7 +86,6 @@
 <body>
 
     <iframe id="frameImpresion" style="display:none;"></iframe>
-
     <div id="toast-container"></div>
 
     <div class="modal-overlay" id="custom-modal">
@@ -103,6 +99,24 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modal-servicio">
+        <div class="modal-box">
+            <h3 id="modal-serv-titulo">Agregar Servicio</h3>
+            <div class="form-group">
+                <label>Descripción detallada del servicio:</label>
+                <input type="text" id="serv-desc" placeholder="Ej: Cambio de pin de carga Y9 Prime">
+            </div>
+            <div class="form-group">
+                <label>Precio a cobrar ($):</label>
+                <input type="number" id="serv-precio" placeholder="Ej: 45000">
+            </div>
+            <div class="modal-botones">
+                <button class="modal-btn btn-no" onclick="cerrarModalServicio()">Cancelar</button>
+                <button class="modal-btn btn-si" onclick="confirmarServicio()">Agregar a Factura</button>
+            </div>
+        </div>
+    </div>
+
     <div class="header">
         <h1>REVOLT</h1>
         <small>Professional Technical Service</small>
@@ -111,6 +125,7 @@
     <div class="tab-menu">
         <button class="tab-links active" onclick="abrirPestana(event, 'PestanaVentas')">💰 CAJA</button>
         <button class="tab-links" onclick="abrirPestana(event, 'PestanaInventario')">📦 INVENTARIO</button>
+        <button class="tab-links" onclick="window.open('orden.html', '_blank')" style="border-left: 1px solid #333;">📄 ORDEN DE GARANTÍA</button>
     </div>
 
     <div id="PestanaVentas" class="tab-content active">
@@ -129,9 +144,9 @@
                 <div class="caja-blanca">
                     <h3 style="margin-top:0; color: #000080;">Agregar al Carrito</h3>
                     <div class="form-group contenedor-buscador">
-                        <label>Buscar / Escanear Producto:</label>
+                        <label>Buscar Producto o Servicio (Escribe "Reparacion"):</label>
                         <div class="input-con-boton">
-                            <input type="text" id="buscadorVentas" placeholder="Escribe el nombre o escanea..." onkeyup="mostrarSugerencias()" onkeypress="manejarEnter(event)" autocomplete="off">
+                            <input type="text" id="buscadorVentas" placeholder="Escribe nombre, código, o 'reparacion'..." onkeyup="mostrarSugerencias()" onkeypress="manejarEnter(event)" autocomplete="off">
                             <button class="btn-anadir" onclick="procesarCodigoVenta()">➕</button>
                             <button class="btn-camara" onclick="iniciarEscaner('buscadorVentas')">📷</button>
                         </div>
@@ -148,7 +163,7 @@
                         <thead>
                             <tr>
                                 <th>Cant.</th>
-                                <th>Producto</th>
+                                <th>Item / Servicio</th>
                                 <th>Precio Unit.</th>
                                 <th>Subtotal</th>
                                 <th>Quitar</th>
@@ -311,7 +326,8 @@
             let filasProductos = '';
             itemsCarrito.forEach(item => {
                 let sub = item.cantidad * item.precio_venta;
-                let nombreCorto = item.nombre.substring(0, 15); 
+                // Permitimos un poco más de caracteres para que los servicios se lean bien
+                let nombreCorto = item.nombre.substring(0, 18); 
                 filasProductos += `<tr>
                     <td>${item.cantidad}</td>
                     <td>${nombreCorto}</td>
@@ -363,7 +379,7 @@
         const db = getFirestore(app);
 
         let inventarioActual = []; 
-        let carrito = []; 
+        window.carrito = []; // Lo hacemos global para acceder desde los modales de servicio
         let totalCaja = 0;
 
         const referenciaProductos = collection(db, "productos");
@@ -406,48 +422,21 @@
             if(!idProd || !nombre || !compra || !venta || !stock) return mostrarAlerta("Por favor, llena todos los campos.", "alerta");
 
             try {
-                // LÓGICA DE BÚSQUEDA EN MEMORIA IGNORANDO MAYÚSCULAS/MINÚSCULAS
                 const idProdLower = idProd.toLowerCase();
                 const nombreLower = nombre.toLowerCase();
                 
-                const productoExistente = inventarioActual.find(p => 
-                    p.codigo.toLowerCase() === idProdLower && 
-                    p.nombre.toLowerCase() === nombreLower
-                );
+                const productoExistente = inventarioActual.find(p => p.codigo.toLowerCase() === idProdLower && p.nombre.toLowerCase() === nombreLower);
 
                 if (productoExistente) {
                     const nuevoStock = productoExistente.stock + Number(stock);
-                    
-                    await updateDoc(doc(db, "productos", productoExistente.idFirebase), { 
-                        stock: nuevoStock, 
-                        precio_compra: Number(compra), 
-                        precio_venta: Number(venta),
-                        nombre: nombre, 
-                        codigo: idProd 
-                    });
-                    
+                    await updateDoc(doc(db, "productos", productoExistente.idFirebase), { stock: nuevoStock, precio_compra: Number(compra), precio_venta: Number(venta), nombre: nombre, codigo: idProd });
                     mostrarAlerta(`Se sumaron ${stock} unidades. Nuevo stock de "${nombre}" es ${nuevoStock}.`, "exito");
                 } else {
-                    await addDoc(collection(db, "productos"), { 
-                        codigo: idProd, 
-                        nombre: nombre, 
-                        precio_compra: Number(compra), 
-                        precio_venta: Number(venta), 
-                        stock: Number(stock) 
-                    });
-                    
+                    await addDoc(collection(db, "productos"), { codigo: idProd, nombre: nombre, precio_compra: Number(compra), precio_venta: Number(venta), stock: Number(stock) });
                     mostrarAlerta("Producto añadido correctamente.", "exito");
                 }
-                
-                document.getElementById('idProducto').value = ''; 
-                document.getElementById('nombre').value = ''; 
-                document.getElementById('compra').value = ''; 
-                document.getElementById('venta').value = ''; 
-                document.getElementById('stock').value = '';
-                
-            } catch (error) { 
-                mostrarAlerta("Error al conectar con la base de datos.", "error"); 
-            }
+                document.getElementById('idProducto').value = ''; document.getElementById('nombre').value = ''; document.getElementById('compra').value = ''; document.getElementById('venta').value = ''; document.getElementById('stock').value = '';
+            } catch (error) { mostrarAlerta("Error al conectar con la base de datos.", "error"); }
         };
 
         window.actualizarStock = async function(idFirebase, stockActual, cambio) {
@@ -464,6 +453,7 @@
             }
         };
         
+        // --- LÓGICA DE SUGERENCIAS CON INYECCIÓN DE SERVICIOS ---
         window.mostrarSugerencias = function() {
             const texto = document.getElementById('buscadorVentas').value.trim().toLowerCase();
             const cajaSugerencias = document.getElementById('sugerenciasVentas');
@@ -474,23 +464,78 @@
                 return;
             }
 
+            // 1. Buscar en el inventario real
             const resultados = inventarioActual.filter(p => 
                 p.codigo.toLowerCase().includes(texto) || 
                 p.nombre.toLowerCase().includes(texto)
             );
 
+            // 2. Inyectar ítems virtuales si el texto coincide con "rep" o "man" o "ser"
+            if ("reparacion".includes(texto) || "reparación".includes(texto) || "servicio".includes(texto)) {
+                resultados.push({ isService: true, tipo: "Reparación", nombre: "🔧 Servicio de Reparación" });
+            }
+            if ("mantenimiento".includes(texto) || "servicio".includes(texto)) {
+                resultados.push({ isService: true, tipo: "Mantenimiento", nombre: "🧹 Servicio de Mantenimiento" });
+            }
+
             if (resultados.length > 0) {
                 resultados.forEach(p => {
                     const div = document.createElement('div');
                     div.className = 'sugerencia-item';
-                    div.innerHTML = `<strong>${p.codigo}</strong> - ${p.nombre} <br><small style="color:${p.stock > 0 ? '#28a745' : '#dc3545'}">Stock disponible: ${p.stock} | Precio: $${p.precio_venta.toLocaleString('es-CO')}</small>`;
-                    div.onclick = () => agregarProductoAlCarritoExacto(p.idFirebase);
+                    
+                    if (p.isService) {
+                        div.innerHTML = `<strong>${p.nombre}</strong> <br><small style="color:#28a745">Clic para ingresar detalle y precio</small>`;
+                        div.onclick = () => abrirModalServicio(p.tipo);
+                    } else {
+                        div.innerHTML = `<strong>${p.codigo}</strong> - ${p.nombre} <br><small style="color:${p.stock > 0 ? '#28a745' : '#dc3545'}">Stock: ${p.stock} | Precio: $${p.precio_venta.toLocaleString('es-CO')}</small>`;
+                        div.onclick = () => agregarProductoAlCarritoExacto(p.idFirebase);
+                    }
                     cajaSugerencias.appendChild(div);
                 });
                 cajaSugerencias.style.display = 'block';
             } else {
                 cajaSugerencias.style.display = 'none';
             }
+        };
+
+        // --- FUNCIONES DEL MODAL DE SERVICIOS ---
+        window.abrirModalServicio = function(tipo) {
+            document.getElementById('modal-serv-titulo').innerText = `Agregar ${tipo}`;
+            document.getElementById('serv-desc').value = `${tipo} de: `;
+            document.getElementById('serv-precio').value = '';
+            
+            document.getElementById('modal-servicio').style.display = 'flex';
+            document.getElementById('buscadorVentas').value = ''; 
+            document.getElementById('sugerenciasVentas').style.display = 'none';
+        };
+
+        window.cerrarModalServicio = function() {
+            document.getElementById('modal-servicio').style.display = 'none';
+        };
+
+        window.confirmarServicio = function() {
+            const desc = document.getElementById('serv-desc').value.trim();
+            const precio = Number(document.getElementById('serv-precio').value);
+
+            if(!desc || !precio || precio <= 0) {
+                return mostrarAlerta("Por favor ingresa una descripción y un precio mayor a 0.", "alerta");
+            }
+
+            // Agregamos el servicio al carrito como un ítem especial
+            carrito.push({
+                idFirebase: "SERV_" + Date.now(), // ID falso para que no choque
+                codigo: "SERVICIO",
+                nombre: desc,
+                precio_venta: precio,
+                precio_compra: 0,
+                stock: 9999, // Stock infinito simulado
+                cantidad: 1,
+                esServicioVirtual: true // Banderita secreta para NO descontar de Firebase
+            });
+
+            cerrarModalServicio();
+            renderizarCarrito();
+            mostrarAlerta("Servicio agregado correctamente.", "exito");
         };
 
         window.agregarProductoAlCarritoExacto = function(idFirebase) {
@@ -517,6 +562,14 @@
             const textoBuscado = document.getElementById('buscadorVentas').value.trim().toLowerCase();
             if (!textoBuscado) return;
 
+            // Si escribe la palabra clave, le abrimos el modal
+            if(textoBuscado === "reparacion" || textoBuscado === "reparación") {
+                return abrirModalServicio("Reparación");
+            }
+            if(textoBuscado === "mantenimiento") {
+                return abrirModalServicio("Mantenimiento");
+            }
+
             let productoExacto = inventarioActual.find(p => p.codigo.toLowerCase() === textoBuscado);
 
             if (productoExacto) {
@@ -542,10 +595,13 @@
                 const subtotal = item.precio_venta * item.cantidad;
                 totalCaja += subtotal;
 
+                // Le ponemos una estrellita al icono si es un servicio
+                const iconoServicio = item.esServicioVirtual ? "🔧 " : "";
+
                 const fila = `
                     <tr>
                         <td style="font-weight:bold;">${item.cantidad}</td>
-                        <td>${item.nombre}</td>
+                        <td>${iconoServicio}${item.nombre}</td>
                         <td>$${item.precio_venta.toLocaleString('es-CO')}</td>
                         <td>$${subtotal.toLocaleString('es-CO')}</td>
                         <td><button class="btn-accion btn-danger" onclick="quitarDelCarrito(${index})">X</button></td>
@@ -574,8 +630,11 @@
                 imprimirTicketFantasma(cliente, documentoCli, carrito, totalCaja);
 
                 for (let item of carrito) {
-                    const nuevoStock = item.stock - item.cantidad;
-                    await updateDoc(doc(db, "productos", item.idFirebase), { stock: nuevoStock });
+                    // SOLO descuenta stock si NO es un servicio virtual
+                    if (!item.esServicioVirtual) {
+                        const nuevoStock = item.stock - item.cantidad;
+                        await updateDoc(doc(db, "productos", item.idFirebase), { stock: nuevoStock });
+                    }
                 }
 
                 await addDoc(collection(db, "ventas"), {
@@ -583,7 +642,7 @@
                     cliente_nombre: cliente,
                     cliente_doc: documentoCli,
                     total_venta: totalCaja,
-                    articulos: carrito.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, subtotal: i.precio_venta * i.cantidad }))
+                    articulos: carrito.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, subtotal: i.precio_venta * i.cantidad, es_servicio: i.esServicioVirtual || false }))
                 });
 
                 mostrarAlerta("¡Venta registrada exitosamente!", "exito");
