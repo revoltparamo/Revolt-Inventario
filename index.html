@@ -95,6 +95,10 @@
         .btn-si:hover { background: #218838; }
         .btn-no { background: #dc3545; color: white; }
         .btn-no:hover { background: #c82333; }
+        
+        .flex-busqueda { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .flex-busqueda > input { flex: 1; min-width: 200px; }
+        .flex-busqueda > select { padding: 10px; border: 2px solid #000080; border-radius: 20px; outline: none; background: white; color: #000080; font-weight: bold; cursor: pointer; min-width: 180px; }
     </style>
 </head>
 <body>
@@ -254,8 +258,20 @@
 
             <div class="caja-blanca">
                 <h2 style="margin-top:0; color: #000080;">INVENTARIO</h2>
-                <div class="form-group">
-                    <input type="text" id="buscador" placeholder="🔍 Buscar por código o nombre..." onkeyup="filtrarTabla()" style="border: 2px solid #000080; border-radius: 20px;">
+                
+                <div class="form-group flex-busqueda">
+                    <input type="text" id="buscador" placeholder="🔍 Buscar por código o nombre..." onkeyup="aplicarFiltrosYOrden()" style="border: 2px solid #000080; border-radius: 20px;">
+                    
+                    <select id="ordenarInventario" onchange="aplicarFiltrosYOrden()">
+                        <option value="recientes">🆕 Añadido recientemente</option>
+                        <option value="default">↕️ Predeterminado</option>
+                        <option value="precio_desc">💰 Mayor a menor precio</option>
+                        <option value="precio_asc">🪙 Menor a mayor precio</option>
+                        <option value="stock_desc">📦 Mayor a menor stock</option>
+                        <option value="stock_asc">📉 Menor a mayor stock</option>
+                        <option value="nombre_asc">🔤 A-Z Nombre</option>
+                        <option value="nombre_desc">🔠 Z-A Nombre</option>
+                    </select>
                 </div>
 
                 <div style="overflow-x: auto;">
@@ -275,7 +291,9 @@
                 </div>
             </div>
         </div>
-    </div> <script>
+    </div> 
+
+    <script>
         function mostrarAlerta(mensaje, tipo = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -344,22 +362,6 @@
         }
         document.addEventListener('keypress', manejarEnter);
 
-        function filtrarTabla() {
-            const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
-            const filas = document.getElementById('tablaInventario').getElementsByTagName('tr');
-            for (let i = 0; i < filas.length; i++) {
-                const celdaCodigo = filas[i].getElementsByTagName('td')[0];
-                const celdaNombre = filas[i].getElementsByTagName('td')[1];
-                if (celdaCodigo || celdaNombre) {
-                    const textoCodigo = celdaCodigo.textContent || celdaCodigo.innerText;
-                    const textoNombre = celdaNombre.textContent || celdaNombre.innerText;
-                    if (textoCodigo.toLowerCase().indexOf(textoBusqueda) > -1 || textoNombre.toLowerCase().indexOf(textoBusqueda) > -1) {
-                        filas[i].style.display = "";
-                    } else { filas[i].style.display = "none"; }
-                }
-            }
-        }
-
         document.addEventListener('click', function(event) {
             const cajaSugerencias = document.getElementById('sugerenciasVentas');
             const inputBuscador = document.getElementById('buscadorVentas');
@@ -413,7 +415,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        // Importamos las herramientas de Autenticación
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -432,20 +433,15 @@
         let inventarioActual = []; 
         window.carrito = []; 
         let totalCaja = 0;
-        let unsubscribeInventario = null; // Para apagar la escucha de la base de datos al cerrar sesión
+        let unsubscribeInventario = null; 
 
-        // --- SISTEMA DE INICIO Y CIERRE DE SESIÓN ---
-
-        // Escucha si hay alguien logueado
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Usuario validado: Oculta login, muestra app e inicia base de datos
                 document.getElementById('pantalla-login').style.display = 'none';
                 document.getElementById('app-principal').style.display = 'block';
                 document.getElementById('user-display').innerText = `👤 ${user.email}`;
                 iniciarBaseDeDatos();
             } else {
-                // No hay usuario: Muestra login, oculta app y apaga base de datos
                 document.getElementById('pantalla-login').style.display = 'flex';
                 document.getElementById('app-principal').style.display = 'none';
                 if(unsubscribeInventario) unsubscribeInventario();
@@ -455,7 +451,6 @@
             }
         });
 
-        // Botón INGRESAR
         document.getElementById('btn-ingresar').addEventListener('click', () => {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-password').value;
@@ -463,20 +458,16 @@
 
             if(!email || !pass) return mostrarAlerta("Ingresa correo y contraseña", "alerta");
 
-            // Configurar si recuerda la sesión o no
             const tipoPersistencia = remember ? browserLocalPersistence : browserSessionPersistence;
 
             setPersistence(auth, tipoPersistencia)
-                .then(() => {
-                    return signInWithEmailAndPassword(auth, email, pass);
-                })
+                .then(() => { return signInWithEmailAndPassword(auth, email, pass); })
                 .catch((error) => {
                     mostrarAlerta("Credenciales incorrectas o usuario no encontrado.", "error");
                     console.error(error);
                 });
         });
 
-        // Botón CERRAR SESIÓN
         document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
             signOut(auth).then(() => {
                 mostrarAlerta("Sesión cerrada correctamente", "exito");
@@ -485,45 +476,77 @@
             });
         });
 
-
-        // --- LÓGICA DE INVENTARIO Y POS (Solo se ejecuta si hay sesión) ---
-        
         function iniciarBaseDeDatos() {
             const referenciaProductos = collection(db, "productos");
             
-            // Guardamos la suscripción para poder cancelarla si cierran sesión
             unsubscribeInventario = onSnapshot(referenciaProductos, (querySnapshot) => {
-                const tabla = document.getElementById('tablaInventario');
-                tabla.innerHTML = ''; 
                 inventarioActual = []; 
-                
                 querySnapshot.forEach((documento) => {
                     let producto = documento.data();
                     producto.idFirebase = documento.id; 
                     inventarioActual.push(producto);
-
-                    const fila = `
-                        <tr>
-                            <td>${producto.codigo}</td>
-                            <td>${producto.nombre}</td>
-                            <td>$${producto.precio_compra.toLocaleString('es-CO')}</td>
-                            <td>$${producto.precio_venta.toLocaleString('es-CO')}</td>
-                            <td style="font-size: 1.1em; font-weight: bold;">${producto.stock}</td>
-                            <td>
-                                <button class="btn-accion btn-menos" onclick="actualizarStock('${documento.id}', ${producto.stock}, -1)">-</button>
-                                <button class="btn-accion btn-mas" onclick="actualizarStock('${documento.id}', ${producto.stock}, 1)">+</button>
-                                <button class="btn-accion btn-danger" onclick="eliminarProducto('${documento.id}')">X</button>
-                            </td>
-                        </tr>
-                    `;
-                    tabla.innerHTML += fila;
                 });
-                if (typeof filtrarTabla === "function") filtrarTabla();
+                aplicarFiltrosYOrden();
             }, (error) => {
                 console.error("Error leyendo inventario:", error);
                 mostrarAlerta("Error de permisos en la base de datos.", "error");
             });
         }
+
+        window.renderizarTablaInventario = function(listaProductos) {
+            const tabla = document.getElementById('tablaInventario');
+            tabla.innerHTML = '';
+            listaProductos.forEach((producto) => {
+                const fila = `
+                    <tr>
+                        <td>${producto.codigo}</td>
+                        <td>${producto.nombre}</td>
+                        <td>$${producto.precio_compra.toLocaleString('es-CO')}</td>
+                        <td>$${producto.precio_venta.toLocaleString('es-CO')}</td>
+                        <td style="font-size: 1.1em; font-weight: bold;">${producto.stock}</td>
+                        <td>
+                            <button class="btn-accion btn-menos" onclick="actualizarStock('${producto.idFirebase}', ${producto.stock}, -1)">-</button>
+                            <button class="btn-accion btn-mas" onclick="actualizarStock('${producto.idFirebase}', ${producto.stock}, 1)">+</button>
+                            <button class="btn-accion btn-danger" onclick="eliminarProducto('${producto.idFirebase}')">X</button>
+                        </td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+        };
+
+        window.aplicarFiltrosYOrden = function() {
+            const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
+            const criterio = document.getElementById('ordenarInventario').value;
+
+            let listaFiltrada = inventarioActual.filter(p => 
+                p.codigo.toLowerCase().includes(textoBusqueda) || 
+                p.nombre.toLowerCase().includes(textoBusqueda)
+            );
+
+            // NUEVA LÓGICA DE ORDENAMIENTO RECIENTE
+            if (criterio === 'recientes') {
+                listaFiltrada.sort((a, b) => {
+                    const timeA = a.fecha_creacion || 0;
+                    const timeB = b.fecha_creacion || 0;
+                    return timeB - timeA; // Descendente: más nuevo primero
+                });
+            } else if (criterio === 'precio_desc') {
+                listaFiltrada.sort((a, b) => b.precio_venta - a.precio_venta);
+            } else if (criterio === 'precio_asc') {
+                listaFiltrada.sort((a, b) => a.precio_venta - b.precio_venta);
+            } else if (criterio === 'stock_desc') {
+                listaFiltrada.sort((a, b) => b.stock - a.stock);
+            } else if (criterio === 'stock_asc') {
+                listaFiltrada.sort((a, b) => a.stock - b.stock);
+            } else if (criterio === 'nombre_asc') {
+                listaFiltrada.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            } else if (criterio === 'nombre_desc') {
+                listaFiltrada.sort((a, b) => b.nombre.localeCompare(a.nombre));
+            }
+
+            renderizarTablaInventario(listaFiltrada);
+        };
 
         window.guardarProducto = async function() {
             const idProd = document.getElementById('idProducto').value.trim();
@@ -540,12 +563,13 @@
                 
                 const productoExistente = inventarioActual.find(p => p.codigo.toLowerCase() === idProdLower && p.nombre.toLowerCase() === nombreLower);
 
+                // SE AÑADE fecha_creacion AL GUARDAR UN NUEVO PRODUCTO
                 if (productoExistente) {
                     const nuevoStock = productoExistente.stock + Number(stock);
                     await updateDoc(doc(db, "productos", productoExistente.idFirebase), { stock: nuevoStock, precio_compra: Number(compra), precio_venta: Number(venta), nombre: nombre, codigo: idProd });
                     mostrarAlerta(`Se sumaron ${stock} unidades. Nuevo stock de "${nombre}" es ${nuevoStock}.`, "exito");
                 } else {
-                    await addDoc(collection(db, "productos"), { codigo: idProd, nombre: nombre, precio_compra: Number(compra), precio_venta: Number(venta), stock: Number(stock) });
+                    await addDoc(collection(db, "productos"), { codigo: idProd, nombre: nombre, precio_compra: Number(compra), precio_venta: Number(venta), stock: Number(stock), fecha_creacion: Date.now() });
                     mostrarAlerta("Producto añadido correctamente.", "exito");
                 }
                 document.getElementById('idProducto').value = ''; document.getElementById('nombre').value = ''; document.getElementById('compra').value = ''; document.getElementById('venta').value = ''; document.getElementById('stock').value = '';
