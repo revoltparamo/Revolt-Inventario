@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REVOLT | Orden de Servicio</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
+        .hoja-impresion { background: white; max-width: 800px; margin: auto; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        
+        /* Encabezado */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000080; padding-bottom: 15px; margin-bottom: 20px; }
+        .logo-box h1 { margin: 0; color: #000080; font-size: 36px; letter-spacing: 2px; }
+        .logo-box p { margin: 0; font-size: 14px; font-weight: bold; color: #555; }
+        .info-orden { text-align: right; }
+        .info-orden h2 { margin: 0; color: #dc3545; }
+        .info-orden p { margin: 5px 0 0 0; font-weight: bold; }
+
+        /* Secciones */
+        .seccion { margin-bottom: 20px; }
+        .titulo-seccion { background-color: #000080; color: white; padding: 8px 12px; font-size: 16px; font-weight: bold; margin-bottom: 15px; }
+        
+        /* Grillas de datos */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        
+        .campo { display: flex; flex-direction: column; }
+        .campo label { font-size: 12px; font-weight: bold; color: #666; margin-bottom: 3px; }
+        .campo input, .campo textarea { border: 1px solid #ccc; padding: 8px; font-family: inherit; font-size: 14px; border-radius: 4px; }
+        .campo textarea { resize: none; height: 60px; }
+
+        /* Términos y Condiciones */
+        .terminos { font-size: 11px; text-align: justify; line-height: 1.4; border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9; }
+        .terminos h4 { margin-top: 0; color: #000080; margin-bottom: 8px; font-size: 13px; }
+        .terminos ul { margin: 0; padding-left: 20px; }
+        .terminos li { margin-bottom: 5px; }
+
+        /* Firmas */
+        .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+        .firma-box { text-align: center; }
+        .linea-firma { border-bottom: 1px solid #333; height: 50px; margin-bottom: 5px; }
+        .firma-box p { margin: 0; font-weight: bold; font-size: 14px; }
+        .firma-box span { font-size: 12px; color: #666; }
+
+        /* Botón de impresión */
+        .btn-imprimir { display: block; width: 100%; max-width: 800px; margin: 20px auto; background-color: #28a745; color: white; font-size: 18px; font-weight: bold; padding: 15px; border: none; border-radius: 5px; cursor: pointer; text-align: center; }
+        .btn-imprimir:hover { background-color: #218838; }
+
+        /* Estilos específicos para cuando se manda a la impresora */
+        @media print {
+            body { background: white; padding: 0; }
+            .hoja-impresion { box-shadow: none; border: none; padding: 0; width: 100%; max-width: 100%; }
+            .btn-imprimir { display: none; } /* Oculta el botón al imprimir */
+            .campo input, .campo textarea { border: none; border-bottom: 1px dashed #999; border-radius: 0; padding: 4px 0; background: transparent; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="btn-imprimir" onclick="window.print()">🖨️ IMPRIMIR ORDEN DE SERVICIO</button>
+
+    <div class="hoja-impresion">
+        
+        <div class="header">
+            <div class="logo-box">
+                <h1>REVOLT</h1>
+                <p>PROFESSIONAL TECHNICAL SERVICE</p>
+            </div>
+            <div class="info-orden">
+                <p>ORDEN DE SERVICIO TÉCNICO</p>
+                <h2>N° <input type="text" style="width: 80px; border:none; border-bottom: 2px solid red; color: red; font-weight: bold; font-size: 20px; text-align: center;" placeholder="0001"></h2>
+                <div style="margin-top: 10px; font-size: 14px;">
+                    <label>Fecha:</label>
+                    <input type="date" style="border: none; border-bottom: 1px solid #ccc; font-family: inherit;">
+                </div>
+            </div>
+        </div>
+
+        <div class="seccion">
+            <div class="titulo-seccion">1. DATOS DEL CLIENTE</div>
+            <div class="grid-3">
+                <div class="campo">
+                    <label>Nombre Completo:</label>
+                    <input type="text">
+                </div>
+                <div class="campo">
+                    <label>Cédula / NIT:</label>
+                    <input type="text">
+                </div>
+                <div class="campo">
+                    <label>Teléfono / Celular:</label>
+                    <input type="text">
+                </div>
+            </div>
+        </div>
+
+        <div class="seccion">
+            <div class="titulo-seccion">2. DATOS DEL EQUIPO</div>
+            <div class="grid-3">
+                <div class="campo">
+                    <label>Marca y Modelo:</label>
+                    <input type="text">
+                </div>
+                <div class="campo">
+                    <label>IMEI / Serial:</label>
+                    <input type="text">
+                </div>
+                <div class="campo">
+                    <label>Contraseña / Patrón:</label>
+                    <input type="text">
+                </div>
+            </div>
+            <div class="campo" style="margin-top: 15px;">
+                <label>Falla Reportada por el Cliente:</label>
+                <input type="text">
+            </div>
+            <div class="campo" style="margin-top: 15px;">
+                <label>Estado Físico al Ingreso (Rayones, golpes, fisuras, humedad):</label>
+                <textarea placeholder="Ej: Ingresa con pantalla fisurada, tapa trasera rayada, sin bandeja SIM..."></textarea>
+            </div>
+        </div>
+
+        <div class="seccion">
+            <div class="titulo-seccion">3. SERVICIO A REALIZAR Y COTIZACIÓN</div>
+            <div class="campo" style="margin-bottom: 15px;">
+                <label>Descripción de la Reparación:</label>
+                <input type="text">
+            </div>
+            <div class="grid-3">
+                <div class="campo">
+                    <label>Valor Total ($):</label>
+                    <input type="number">
+                </div>
+                <div class="campo">
+                    <label>Abono Dejado ($):</label>
+                    <input type="number">
+                </div>
+                <div class="campo">
+                    <label>Saldo Pendiente ($):</label>
+                    <input type="number">
+                </div>
+            </div>
+        </div>
+
+        <div class="seccion">
+            <div class="terminos">
+                <h4>TÉRMINOS DE GARANTÍA Y CONDICIONES DEL SERVICIO</h4>
+                <ul>
+                    <li><strong>Tiempo de Garantía:</strong> Las reparaciones de hardware (pantallas, pines de carga, baterías) tienen una garantía de <strong>30 días calendario</strong> a partir de la fecha de entrega. La garantía cubre exclusivamente defectos de fábrica del repuesto instalado.</li>
+                    <li><strong>Exclusiones:</strong> La garantía se anula automáticamente si el equipo presenta golpes, humedad, manipulación de terceros, ruptura de los sellos de seguridad de REVOLT, o si la pantalla presenta rayones profundos o fisuras (internas o externas).</li>
+                    <li><strong>Software y Cuentas:</strong> Los servicios de software, flasheo, eliminación de cuentas y liberación no tienen ningún tipo de garantía.</li>
+                    <li><strong>Equipos de Alto Riesgo:</strong> Todo equipo que ingrese apagado, golpeado severamente, o con daño por líquidos (humedad), ingresa bajo <strong>exclusivo riesgo del cliente</strong>. REVOLT no se hace responsable si el equipo no vuelve a encender o presenta fallas secundarias no detectables al momento del ingreso.</li>
+                    <li><strong>Abandono de Equipo (Ley 1480 de 2011):</strong> Pasados 30 días de la notificación de reparación, se generará un cobro por bodegaje. Transcurridos <strong>60 días calendario</strong> sin que el cliente retire el equipo, este será declarado en estado de abandono y REVOLT podrá disponer del mismo para cubrir los gastos de repuestos y mano de obra.</li>
+                </ul>
+                <p style="margin-bottom: 0; text-align: center; font-weight: bold;">* Al firmar este documento, el cliente acepta expresamente las condiciones aquí descritas. *</p>
+            </div>
+        </div>
+
+        <div class="firmas">
+            <div class="firma-box">
+                <div class="linea-firma"></div>
+                <p>Firma del Cliente</p>
+                <span>C.C.</span>
+            </div>
+            <div class="firma-box">
+                <div class="linea-firma"></div>
+                <p>Yerson Ortiz</p>
+                <span>REVOLT | Servicio Técnico</span>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
