@@ -99,6 +99,10 @@
         .flex-busqueda { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .flex-busqueda > input { flex: 1; min-width: 200px; }
         .flex-busqueda > select { padding: 10px; border: 2px solid #000080; border-radius: 20px; outline: none; background: white; color: #000080; font-weight: bold; cursor: pointer; min-width: 180px; }
+
+        /* NUEVO: ESTILO PARA EDITAR PRECIO EN CARRITO */
+        .input-precio-carrito { width: 90px; padding: 6px; text-align: center; border: 2px solid #ccc; border-radius: 4px; font-weight: bold; font-size: 14px; background: #fff;}
+        .input-precio-carrito:focus { border-color: #28a745; outline: none; background: #f0fdf4; }
     </style>
 </head>
 <body>
@@ -524,12 +528,11 @@
                 p.nombre.toLowerCase().includes(textoBusqueda)
             );
 
-            // NUEVA LÓGICA DE ORDENAMIENTO RECIENTE
             if (criterio === 'recientes') {
                 listaFiltrada.sort((a, b) => {
                     const timeA = a.fecha_creacion || 0;
                     const timeB = b.fecha_creacion || 0;
-                    return timeB - timeA; // Descendente: más nuevo primero
+                    return timeB - timeA; 
                 });
             } else if (criterio === 'precio_desc') {
                 listaFiltrada.sort((a, b) => b.precio_venta - a.precio_venta);
@@ -563,7 +566,6 @@
                 
                 const productoExistente = inventarioActual.find(p => p.codigo.toLowerCase() === idProdLower && p.nombre.toLowerCase() === nombreLower);
 
-                // SE AÑADE fecha_creacion AL GUARDAR UN NUEVO PRODUCTO
                 if (productoExistente) {
                     const nuevoStock = productoExistente.stock + Number(stock);
                     await updateDoc(doc(db, "productos", productoExistente.idFirebase), { stock: nuevoStock, precio_compra: Number(compra), precio_venta: Number(venta), nombre: nombre, codigo: idProd });
@@ -697,6 +699,18 @@
             }
         };
 
+        // --- NUEVA FUNCIÓN PARA MODIFICAR EL PRECIO MANUALMENTE EN EL CARRITO ---
+        window.modificarPrecioCarrito = function(index, nuevoPrecio) {
+            const precioValidado = Number(nuevoPrecio);
+            if (precioValidado >= 0) {
+                carrito[index].precio_venta = precioValidado;
+                renderizarCarrito(); // Recalcula los subtotales y el total
+            } else {
+                mostrarAlerta("El precio no puede ser negativo.", "error");
+                renderizarCarrito(); // Lo devuelve al precio anterior si meten un número raro
+            }
+        };
+
         window.renderizarCarrito = function() {
             const tabla = document.getElementById('tablaCarrito');
             tabla.innerHTML = '';
@@ -707,11 +721,17 @@
                 totalCaja += subtotal;
                 const iconoServicio = item.esServicioVirtual ? "🔧 " : "";
 
+                // Cambiamos el td del Precio Unit. por un input editable
                 const fila = `
                     <tr>
                         <td style="font-weight:bold;">${item.cantidad}</td>
                         <td>${iconoServicio}${item.nombre}</td>
-                        <td>$${item.precio_venta.toLocaleString('es-CO')}</td>
+                        <td>
+                            <div style="display:flex; justify-content:center; align-items:center; gap:3px;">
+                                <span style="font-weight:bold; color:#555;">$</span>
+                                <input type="number" class="input-precio-carrito" value="${item.precio_venta}" onchange="modificarPrecioCarrito(${index}, this.value)">
+                            </div>
+                        </td>
                         <td>$${subtotal.toLocaleString('es-CO')}</td>
                         <td><button class="btn-accion btn-danger" onclick="quitarDelCarrito(${index})">X</button></td>
                     </tr>
@@ -733,6 +753,7 @@
             if (!confirmado) return;
 
             try {
+                // El ticket se imprime respetando los precios modificados
                 imprimirTicketFantasma(cliente, documentoCli, carrito, totalCaja);
 
                 for (let item of carrito) {
